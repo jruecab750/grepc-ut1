@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catálogo de Medios y Recursos · PTEAND · Módulo de Gestión de Recursos</title>
+<link rel="stylesheet" href="lib/leaflet.min.css">
+<script src="lib/leaflet.min.js"></script>
+<script src="lib/jspdf.umd.min.js"></script>
+<style>
+/* ============ BLINDAJE CAPA 2: CSS prefijado, sin globales ============ */
+.mgr-catmedios-interactivo{font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#252525;max-width:1150px;margin:0 auto;padding:10px;box-sizing:border-box}
+.mgr-catmedios-interactivo *,.mgr-catmedios-interactivo *::before,.mgr-catmedios-interactivo *::after{box-sizing:border-box}
+.mgr-catmedios-interactivo h2{color:#004B23 !important;font-size:1.45em;margin:4px 0 2px 0;border-bottom:3px solid #007932;padding-bottom:6px}
+.mgr-catmedios-interactivo h3{color:#007932 !important;font-size:1.05em;margin:14px 0 6px 0}
+.mgr-catmedios-interactivo .mgrcm-intro{background:#e8f5e9 !important;border-left:5px solid #007932 !important;padding:10px 14px !important;border-radius:6px;margin:10px 0;font-size:.95em;line-height:1.45}
+.mgr-catmedios-interactivo .mgrcm-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.mgr-catmedios-interactivo .mgrcm-toolbar input[type="text"],.mgr-catmedios-interactivo .mgrcm-toolbar select{padding:8px 10px;border:2px solid #368f3f;border-radius:6px;font-size:.92em;background:#fff !important;color:#252525 !important}
+.mgr-catmedios-interactivo .mgrcm-toolbar input[type="text"]{flex:1 1 220px;min-width:180px}
+.mgr-catmedios-interactivo .mgrcm-btn{background:#007932 !important;color:#fff !important;border:none;border-radius:6px;padding:9px 16px;font-size:.92em;font-weight:600;cursor:pointer}
+.mgr-catmedios-interactivo .mgrcm-btn:hover{background:#004B23 !important}
+.mgr-catmedios-interactivo .mgrcm-btn[disabled]{background:#9e9e9e !important;cursor:not-allowed}
+.mgr-catmedios-interactivo .mgrcm-btn-sec{background:#5d4037 !important}
+.mgr-catmedios-interactivo .mgrcm-btn-warn{background:#b71c1c !important}
+.mgr-catmedios-interactivo .mgrcm-layout{display:flex;gap:10px;align-items:stretch}
+.mgr-catmedios-interactivo .mgrcm-sidebar{flex:0 0 270px;max-height:560px;overflow-y:auto;background:#f5f5f5 !important;border:1px solid #ccc;border-radius:8px;padding:10px;font-size:.85em}
+.mgr-catmedios-interactivo .mgrcm-grupo{margin-bottom:10px}
+.mgr-catmedios-interactivo .mgrcm-grupo-titulo{font-weight:700;color:#fff !important;background:#368f3f !important;padding:4px 8px !important;border-radius:5px;font-size:.92em;margin-bottom:4px}
+.mgr-catmedios-interactivo .mgrcm-cat{display:flex;align-items:center;gap:6px;padding:3px 4px;cursor:pointer;border-radius:4px}
+.mgr-catmedios-interactivo .mgrcm-cat:hover{background:#e0e0e0}
+.mgr-catmedios-interactivo .mgrcm-dot{width:13px;height:13px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 2px rgba(0,0,0,.6);flex:0 0 13px}
+.mgr-catmedios-interactivo .mgrcm-cat-n{color:#555;font-size:.9em;margin-left:auto}
+.mgr-catmedios-interactivo .mgrcm-mapwrap{flex:1 1 auto;min-width:0}
+.mgr-catmedios-interactivo #mgrcm_mapa{height:560px;border:2px solid #368f3f;border-radius:8px;z-index:1}
+.mgr-catmedios-interactivo .mgrcm-status{background:#fffde7 !important;border:1px solid #f9a825;border-radius:6px;padding:6px 10px;margin:8px 0;font-size:.9em}
+.mgr-catmedios-interactivo .mgrcm-reto-panel{background:#e3f2fd !important;border-left:5px solid #368F3F !important;border-radius:6px;padding:10px 14px;margin:10px 0;font-size:.95em}
+.mgr-catmedios-interactivo .mgrcm-reto-panel.mgrcm-ok{background:#e8f5e9 !important;border-left-color:#007932 !important}
+.mgr-catmedios-interactivo .mgrcm-reto-panel.mgrcm-ko{background:#ffebee !important;border-left-color:#b71c1c !important}
+.mgr-catmedios-interactivo table.mgrcm-tabla{border-collapse:collapse;width:100%;font-size:.87em;margin:8px 0}
+.mgr-catmedios-interactivo table.mgrcm-tabla th{background:#007932 !important;color:#fff !important;padding:6px 8px !important;border:1px solid #004B23 !important;text-align:left !important}
+.mgr-catmedios-interactivo table.mgrcm-tabla td{padding:5px 8px !important;border:1px solid #bbb !important;background:#fff !important;color:#252525 !important}
+.mgr-catmedios-interactivo table.mgrcm-tabla tr.mgrcm-fila-ok td{background:#e8f5e9 !important}
+.mgr-catmedios-interactivo table.mgrcm-tabla tr.mgrcm-fila-ko td{background:#ffebee !important}
+.mgr-catmedios-interactivo .mgrcm-ficha-item{display:flex;align-items:center;gap:8px;background:#fff !important;border:1px solid #ccc;border-radius:6px;padding:5px 10px;margin:4px 0;font-size:.88em}
+.mgr-catmedios-interactivo .mgrcm-ficha-item button{background:#b71c1c !important;color:#fff !important;border:none;border-radius:4px;padding:2px 8px;cursor:pointer;margin-left:auto}
+.mgr-catmedios-interactivo .mgrcm-pdfzone{background:#f5f5f5 !important;border:1px solid #ccc;border-radius:8px;padding:12px;margin:12px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.mgr-catmedios-interactivo .mgrcm-pdfzone input{padding:8px 10px;border:2px solid #368f3f;border-radius:6px;font-size:.92em;flex:1 1 240px;background:#fff !important;color:#252525 !important}
+.mgr-catmedios-interactivo .mgrcm-fuentes{font-size:.78em;color:#555 !important;margin-top:12px;border-top:1px solid #ccc;padding-top:8px;line-height:1.5}
+.mgr-catmedios-interactivo .mgrcm-leyenda-agua{margin-top:8px;text-align:center}
+.mgr-catmedios-interactivo .mgrcm-leyenda-agua img{max-width:100%;border:1px solid #ccc;border-radius:4px;background:#fff}
+.mgr-catmedios-interactivo .mgrcm-busq-res{position:relative}
+.mgr-catmedios-interactivo #mgrcm_resultados{position:absolute;top:100%;left:0;right:0;background:#fff !important;border:1px solid #368f3f;border-radius:0 0 6px 6px;max-height:260px;overflow-y:auto;z-index:1200;box-shadow:0 4px 8px rgba(0,0,0,.25)}
+.mgr-catmedios-interactivo #mgrcm_resultados div{padding:6px 10px;cursor:pointer;font-size:.88em;border-bottom:1px solid #eee}
+.mgr-catmedios-interactivo #mgrcm_resultados div:hover{background:#e8f5e9}
+.mgr-catmedios-interactivo .mgrcm-popup-btn{background:#007932;color:#fff;border:none;border-radius:4px;padding:4px 8px;cursor:pointer;font-size:.85em;margin-top:4px}
+.mgr-catmedios-interactivo .mgrcm-incidente{animation:mgrcm-pulso 1s infinite alternate}
+@keyframes mgrcm-pulso{from{transform:scale(1)}to{transform:scale(1.25)}}
+.mgr-catmedios-interactivo .mgrcm-notas{width:100%;min-height:110px;padding:10px;border:2px solid #368f3f;border-radius:6px;font-size:.92em;font-family:inherit;background:#fff !important;color:#252525 !important;resize:vertical}
+.mgr-catmedios-interactivo .mgrcm-reto-pasos{margin:8px 0 6px 18px;padding:0;font-size:.95em;line-height:1.5}
+.mgr-catmedios-interactivo .mgrcm-reto-pasos li{margin-bottom:4px}
+.mgr-catmedios-interactivo .mgrcm-badge{display:inline-block;background:#368F3F !important;color:#fff !important;border-radius:10px;padding:1px 9px;font-size:.85em;font-weight:700;margin-right:6px}
+.mgr-catmedios-interactivo .mgrcm-reto-ayuda{background:#e3f2fd !important;border-left:5px solid #368F3F !important;border-radius:6px;padding:8px 14px;margin:10px 0}
+.mgr-catmedios-interactivo .mgrcm-reto-ayuda summary{cursor:pointer;font-weight:700;font-size:.95em;color:#007932 !important}
+@media (max-width:820px){.mgr-catmedios-interactivo .mgrcm-layout{flex-direction:column}.mgr-catmedios-interactivo .mgrcm-sidebar{flex:1 1 auto;max-height:240px}.mgr-catmedios-interactivo #mgrcm_mapa{height:420px}}
+</style>
+</head>
+<body>
+<!-- ============ BLINDAJE CAPA 1: wrapper único ============ -->
+<div class="mgr-catmedios-interactivo" id="mgr-catmedios-root">
+
+  <h2>🗺️ Catálogo de Medios y Recursos · Plan Territorial de Emergencias de Andalucía (PTEAND)</h2>
+
+  <div class="mgrcm-intro">
+    <strong>¿Qué es esto?</strong> Este visor recoge los <strong>medios y recursos movilizables</strong> del Catálogo del PTEAND,
+    organizados según la estructura operativa del Plan: centros directivos y de coordinación, Grupo de Intervención,
+    Grupo Sanitario, Grupo de Apoyo Logístico y Social y otros servicios.
+    <strong>Explora el mapa</strong>, filtra por provincia o categoría y consulta la ficha de cada medio.
+    Activa también las capas en vivo del <strong>🔥 dispositivo de extinción de incendios</strong> (💧 puntos de agua,
+    🛩️ CEDEFOs/bases/pistas, 🗼 torres de vigilancia y 🚒 vehículos contra incendios)
+    y <strong>pulsa sobre cualquier símbolo</strong> para consultar su ficha oficial REDIAM.
+    Después, pon a prueba tu destreza con el <strong>🎯 Reto de localización</strong> y genera tu
+    <strong>📄 ficha PDF</strong> de entrega (incluirá capturas del mapa y tu registro del reto).
+  </div>
+
+  <div class="mgrcm-toolbar">
+    <span class="mgrcm-busq-res" style="flex:1 1 240px">
+      <input type="text" id="mgrcm_buscador" placeholder="🔍 Buscar medio o municipio (mín. 3 letras)…" autocomplete="off">
+      <div id="mgrcm_resultados" style="display:none"></div>
+    </span>
+    <select id="mgrcm_provincia">
+      <option value="">Todas las provincias</option>
+    </select>
+    <button class="mgrcm-btn" id="mgrcm_btn_reto">🎯 Iniciar reto de localización</button>
+    <button class="mgrcm-btn mgrcm-btn-sec" id="mgrcm_btn_todo">Mostrar todo</button>
+  </div>
+
+  <div class="mgrcm-layout">
+    <div class="mgrcm-sidebar" id="mgrcm_sidebar">
+      <div style="display:flex;gap:6px;margin-bottom:8px">
+        <button class="mgrcm-btn" id="mgrcm_btn_capas_on" style="flex:1;padding:5px 8px;font-size:.9em" title="Activar todas las capas, incluida la de puntos de agua">✅ Todas</button>
+        <button class="mgrcm-btn mgrcm-btn-sec" id="mgrcm_btn_capas_off" style="flex:1;padding:5px 8px;font-size:.9em" title="Desactivar todas las capas">🚫 Ninguna</button>
+      </div>
+      <!-- categorías generadas por JS -->
+      <div id="mgrcm_grupos"></div>
+      <div class="mgrcm-grupo">
+        <div class="mgrcm-grupo-titulo" style="background:#0277bd !important">🔥 Dispositivo de extinción (REDIAM, en vivo)</div>
+        <div id="mgrcm_capas_rediam"><!-- capas WMS generadas por JS --></div>
+      </div>
+      <div class="mgrcm-grupo">
+        <div class="mgrcm-grupo-titulo" style="background:#455a64 !important">🗺️ Límites administrativos (DERA, en vivo)</div>
+        <label class="mgrcm-cat"><input type="checkbox" id="mgrcm_chk_lim_prov">
+          <span class="mgrcm-dot" style="background:#37474f"></span><span>Provincias <em>(WMS en vivo)</em></span></label>
+        <label class="mgrcm-cat"><input type="checkbox" id="mgrcm_chk_lim_mun">
+          <span class="mgrcm-dot" style="background:#90a4ae"></span><span>Términos municipales <em>(WMS en vivo)</em></span></label>
+        <div style="font-size:.82em;color:#555;margin-top:2px">Con una capa de límites activa, pulsa en cualquier punto del mapa para identificar su municipio y provincia.</div>
+      </div>
+    </div>
+    <div class="mgrcm-mapwrap">
+      <div id="mgrcm_mapa"></div>
+      <div class="mgrcm-status" id="mgrcm_status">Cargando mapa…</div>
+    </div>
+  </div>
+
+  <details class="mgrcm-reto-ayuda" id="mgrcm_reto_detalles">
+    <summary>🎯 ¿Cómo funciona el reto de localización? (léelo antes de empezar)</summary>
+    <ol class="mgrcm-reto-pasos">
+      <li>Al pulsar <strong>«🎯 Iniciar reto de localización»</strong> comienza directamente la primera de <strong>5 emergencias</strong> en puntos distintos de Andalucía. Cada una aparece señalada con el símbolo <strong>⚠️</strong> (parpadea) y el mapa se centra en ella.</li>
+      <li>En cada ronda se te pedirá el medio <strong>más cercano al incidente</strong> de una categoría concreta (por ejemplo, parques de bomberos). <strong>El reto no activa ni desactiva ninguna capa por ti</strong>: eres tú quien debe encontrar y activar en el panel lateral la categoría que necesites, y puedes encender o apagar todas las que quieras en cualquier momento, también las del dispositivo de extinción (REDIAM).</li>
+      <li><strong>Haz zoom</strong> con la rueda del ratón o los botones <strong>+ / −</strong> y <strong>pulsa sobre el punto de color</strong> que elijas. Al acercarte, los puntos se hacen más grandes y fáciles de pulsar. Si pulsas un medio de otra categoría, se te avisa y la ronda sigue en juego.</li>
+      <li>La corrección se hace por <strong>distancia en línea recta</strong> al incidente (margen de tolerancia del 10%). Tras cada respuesta verás la distancia de tu elección y la del medio realmente más próximo, y se guardará automáticamente una <strong>captura del mapa</strong> de esa ronda.</li>
+      <li>Al terminar tendrás tu <strong>puntuación</strong> y una tabla-resumen. Escribe después en <strong>«📝 Mi registro del reto»</strong> qué estrategia has seguido: puntuación, tabla, capturas de cada ronda y tu registro quedarán <strong>incluidos en la ficha PDF</strong>.</li>
+    </ol>
+  </details>
+  <div class="mgrcm-reto-panel" id="mgrcm_reto_panel" style="display:none"></div>
+  <div id="mgrcm_reto_resumen"></div>
+
+  <details class="mgrcm-reto-ayuda" id="mgrcm_mision" style="border-left-color:#e65100 !important;background:#fff3e0 !important">
+    <summary style="color:#e65100 !important">🧭 Misión de reconocimiento: el dispositivo de extinción sobre el terreno</summary>
+    <p style="font-size:.92em;margin:6px 0">Activa las capas REDIAM del panel lateral y resuelve estas tres consignas. <strong>Escribe tus respuestas en «📝 Mi registro del reto»</strong>: quedarán recogidas en tu ficha PDF.</p>
+    <ol class="mgrcm-reto-pasos">
+      <li>Activa 🗼 <strong>Torres de vigilancia</strong> y localiza la más próxima a tu municipio. Púlsala y anota su nombre o código y a qué comarca forestal da cobertura.</li>
+      <li>Activa 🛩️ <strong>CEDEFOs, bases y pistas</strong> e identifica la instalación del dispositivo aéreo más cercana a tu zona. Anota cuál es y de qué tipo (CEDEFO, base o pista).</li>
+      <li>Activa 💧 <strong>Puntos de agua</strong> y 🚒 <strong>Vehículos contra incendios</strong>: busca una balsa o pantaneta situada a menos de ~10 km de un parque de bomberos del catálogo. Anota el código del punto de agua y el nombre del parque.</li>
+    </ol>
+  </details>
+
+  <h3>📝 Mi registro del reto</h3>
+  <p style="font-size:.9em;margin:4px 0">Cuenta con tus palabras <strong>qué has hecho durante el reto</strong>: qué capas activaste, qué estrategia seguiste para localizar cada medio, qué te resultó difícil y qué has aprendido sobre la distribución territorial de los recursos. <strong>Este texto se incluirá en tu ficha PDF.</strong></p>
+  <textarea class="mgrcm-notas" id="mgrcm_reto_notas" placeholder="Ejemplo: En la ronda 1 el incidente estaba en la Sierra de Cádiz; activé la capa de parques de bomberos, amplié el zoom sobre la comarca y comparé los dos parques más próximos antes de decidirme…"></textarea>
+
+  <h3>📌 Mi ficha de medios seleccionados</h3>
+  <p style="font-size:.9em;margin:4px 0">Haz clic en un medio del mapa y pulsa <em>«Añadir a mi ficha»</em> para incluirlo en tu PDF de entrega (máx. 12).</p>
+  <div id="mgrcm_ficha_lista"><em style="font-size:.9em;color:#555">Aún no has añadido ningún medio.</em></div>
+
+  <div class="mgrcm-pdfzone">
+    <label for="mgrcm_alumno_nombre" style="font-weight:600">Nombre y apellidos:</label>
+    <input type="text" id="mgrcm_alumno_nombre" placeholder="Escribe tu nombre y apellidos" autocomplete="off">
+    <button class="mgrcm-btn" id="mgrcm_btn_pdf">📄 Generar ficha PDF</button>
+  </div>
+
+  <div class="mgrcm-fuentes">
+    <strong>Fuentes oficiales:</strong> Visor del Plan Territorial de Emergencias de Andalucía (IECA · Junta de Andalucía) —
+    servicios WFS <em>PTEAND</em>, <em>DERA G12 Servicios</em> e <em>ISE</em> de IDEAndalucía (datos vectoriales descargados y
+    embebidos, julio 2026) · Capas servidas en vivo por WMS de la REDIAM (Consejería competente en medio ambiente):
+    «Puntos de Agua para Extinción de Incendios» y «Equipamientos contra incendios en Andalucía 2020» (CEDEFOs, bases y
+    pistas; torres de vigilancia; vehículos contra incendios) · Límites provinciales y municipales servidos en vivo por
+    WMS/WFS «DERA G13 Límites administrativos» (IDEAndalucía) · Cartografía base © OpenStreetMap / Ortofotografía 2022 IDEAndalucía.
+    Los datos embebidos son una instantánea con fines exclusivamente didácticos: para uso operativo consulta siempre el
+    visor oficial actualizado.
+  </div>
+</div>
+
+<script>
+var LOGO_JUNTA="data:image/png;base64,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";
+
+(function(){ "use strict";
+/* ============ BLINDAJE CAPA 4: IIFE ============ */
+
+/* ——— Parámetros editables del módulo ——— */
+var MGRCM_UD  = "X";   /* ← nº de Unidad Didáctica */
+var MGRCM_APT = "X";   /* ← nº de Apartado */
+var MGRCM_MODULO = "Módulo de Gestión de Recursos · FP Coordinación de Emergencias y Protección Civil";
+
+/* ——— Datos embebidos (instantánea WFS IDEAndalucía, jul-2026) ——— */
+var DATOS = {"deleg":[{"n":"Delegación del Gobierno de la Junta de Andalucía en Jaén","m":"Jaén","pr":"Jaén","d":"Plaza de las Batallas, 1. 23007, Jaén, Jaén","x":-3.789,"y":37.7723},{"n":"Delegación del Gobierno de la Junta de Andalucía en Málaga","m":"Málaga","pr":"Málaga","d":"Alameda Principal, 18. 29071, Málaga, Málaga","x":-4.4234,"y":36.7177},{"n":"Delegación del Gobierno de la Junta de Andalucía en Cádiz","m":"Cádiz","pr":"Cádiz","d":"C/ Fernando el Católico, 3. 11071, Cádiz, Cádiz","x":-6.2924,"y":36.5357},{"n":"Delegación del Gobierno de la Junta de Andalucía en Almería","m":"Almería","pr":"Almería","d":"Paseo de Almería, 68. 04001, Almería, Almería","x":-2.4631,"y":36.836},{"n":"Delegación del Gobierno de la Junta de Andalucía en Huelva","m":"Huelva","pr":"Huelva","d":"C/ Sanlúcar de Barrameda, 3. 21071, Huelva, Huelva","x":-6.9574,"y":37.2549},{"n":"Delegación del Gobierno de la Junta de Andalucía en Sevilla","m":"Sevilla","pr":"Sevilla","d":"Plaza de la Contratación, 3. 41004, Sevilla, Sevilla","x":-5.9924,"y":37.3838},{"n":"Delegación del Gobierno de la Junta de Andalucía en Córdoba","m":"Córdoba","pr":"Córdoba","d":"C/ San Felipe, 5. 14003, Córdoba, Córdoba","x":-4.782,"y":37.8842},{"n":"Delegación del Gobierno de la Junta de Andalucía en Granada","m":"Granada","pr":"Granada","d":"Gran Vía de Colón, 56. 18010, Granada, Granada","x":-3.6013,"y":37.1827}],"c112":[{"n":"Centro Provincial 112 Almería","m":"Almería","pr":"Almería","d":"C/ Hermanos Machado, . 04004, Almería, Almería","x":-2.4608,"y":36.8356},{"n":"Centro Regional 112 Sevilla","m":"Torreblanca de los Caños","pr":"Sevilla","d":"Avenida del Deporte, . 41020, Torreblanca de los Caños, Sevilla","x":-5.9165,"y":37.387},{"n":"Centro Provincial 112 Sevilla","m":"Torreblanca de los Caños","pr":"Sevilla","d":"Avenida del Deporte, . 41020, Torreblanca de los Caños, Sevilla","x":-5.9166,"y":37.3869},{"n":"Centro Provincial 112 Cádiz","m":"Cádiz","pr":"Cádiz","d":"Plaza de España, 19. 11004, Cádiz, Cádiz","x":-6.2925,"y":36.5354},{"n":"Centro Provincial 112 Córdoba","m":"Córdoba","pr":"Córdoba","d":"C/ San Felipe, 5. o Plaza San Nicolás, 5. 14003, Córdoba, Córdoba","x":-4.782,"y":37.8841},{"n":"Centro Provincial 112 Granada","m":"Granada","pr":"Granada","d":"C/ Pofesor Cavera, 12. 18011, Granada, Granada","x":-3.5962,"y":37.1904},{"n":"Centro Provincial 112 Huelva","m":"Huelva","pr":"Huelva","d":"C/ Sanlúcar de Barrameda, 3. 21001, Huelva, Huelva","x":-6.9574,"y":37.2549},{"n":"Centro Provincial 112 Málaga","m":"Málaga","pr":"Málaga","d":"Avenida de Aurora, 56. 29006, Málaga, Málaga","x":-4.441,"y":36.7151},{"n":"Centro Provincial 112 Jáen","m":"Jaén","pr":"Jaén","d":"C/ Pintor Pablo Martín del Castillo, 2.  23006, Jaén, Jaén","x":-3.7962,"y":37.7805},{"n":"Centro Regional 112 Málaga","m":"Málaga","pr":"Málaga","d":"Avenida de Aurora, 56. 29006, Málaga, Málaga","x":-4.441,"y":36.7151}],"bomberos":[{"n":"BOMBEROS UBRIQUE","m":"Ubrique","pr":"Cádiz","d":"LUGAR CARRETERA UBRIQUE-BENAOCAZ, 1","x":-5.4513,"y":36.6828},{"n":"BOMBEROS RONDA","m":"Ronda","pr":"Málaga","d":"PLAZA CARLOS CANO, 1","x":-5.1485,"y":36.7532},{"n":"BOMBEROS ANTEQUERA","m":"Antequera","pr":"Málaga","d":"CARRETERA A-343, 1","x":-4.5992,"y":37.0669},{"n":"BOMBEROS BAZA","m":"Baza","pr":"Granada","d":"CALLE JUAN DE LA CIERVA, 8","x":-2.7673,"y":37.4858},{"n":"BOMBEROS BENALUP-CASAS VIEJAS","m":"Benalup-Casas Viejas","pr":"Cádiz","d":"CALLE CARPINTEROS, 0","x":-5.8178,"y":36.3512},{"n":"BOMBEROS HUERCAL-OLVERA","m":"Huércal-Overa","pr":"Almería","d":"CALLE ALONDRA, 14","x":-1.8785,"y":37.4185},{"n":"BOMBEROS SANLUCAR DE BARRAMEDA","m":"Sanlúcar de Barrameda","pr":"Cádiz","d":"CAMINO INSTITUTO (DEL), S/N","x":-6.3447,"y":36.7894},{"n":"BOMBEROS ALCALA LA REAL","m":"Alcalá la Real","pr":"Jaén","d":"CALLE INDUSTRIA, S/N","x":-3.9261,"y":37.4528},{"n":"BOMBEROS ALMERIA","m":"Almería","pr":"Almería","d":"CALLE SANTA BARBARA, 10","x":-2.4518,"y":36.8496},{"n":"BOMBEROS ESTEPONA","m":"Estepona","pr":"Málaga","d":"AVENIDA JUAN CARLOS I, 151","x":-5.162,"y":36.4323},{"n":"BOMBEROS ALMUÑECAR","m":"Almuñécar","pr":"Granada","d":"AVENIDA SALOBREÑA, S/N","x":-3.6878,"y":36.7372},{"n":"BOMBEROS BARBATE","m":"Barbate","pr":"Cádiz","d":"CALLE COPEJADORES, 3","x":-5.926,"y":36.205},{"n":"BOMBEROS BASE NAVAL DE ROTA","m":"Rota","pr":"Cádiz","d":"BASE NAVAL DE ROTA, S/N","x":-6.3545,"y":36.6291},{"n":"BOMBEROS DIPUTACION SEVILLA","m":"Alcalá de Guadaíra","pr":"Sevilla","d":"CARRETERA A-376 ANTIGUA SEVILLA UTRERA, S/N","x":-5.8575,"y":37.2774},{"n":"BOMBEROS GUADIX","m":"Guadix","pr":"Granada","d":"AVENIDA BUENOS AIRES, S/N","x":-3.1291,"y":37.3121},{"n":"BOMBEROS HUELVA","m":"Huelva","pr":"Huelva","d":"AVENIDA PIO XII, 28","x":-6.942,"y":37.2613},{"n":"BOMBEROS LA CAROLINA","m":"La Carolina","pr":"Jaén","d":"AVENIDA MINISTRO JOSEP PIQUE (DEL), 0","x":-3.6053,"y":38.283},{"n":"BOMBEROS MARBELLA","m":"Marbella","pr":"Málaga","d":"CARRETERA A-7, S/N","x":-4.8796,"y":36.5214},{"n":"BOMBEROS SUR GRANADA","m":"Granada","pr":"Granada","d":"CALLE ANTONIO DALMASES, 2","x":-3.5989,"y":37.1647},{"n":"BOMBEROS ALCALA DE GUADAIRA","m":"Alcalá de Guadaíra","pr":"Sevilla","d":"AVENIDA PRINCIPE DE ASTURIAS, 4","x":-5.8588,"y":37.3527},{"n":"BOMBEROS  LEVANTE TURRE","m":"Turre","pr":"Almería","d":"CARRETERA GARRUYA, S/N","x":-1.8881,"y":37.1567},{"n":"BOMBEROS CONSORCIO CADIZ","m":"Cádiz","pr":"Cádiz","d":"AVENIDA DE LAS CORTES DE CADIZ, S/N","x":-6.281,"y":36.5243},{"n":"BOMBEROS CORDOBA CENTRAL","m":"Córdoba","pr":"Córdoba","d":"AVENIDA DE LOS CUSTODIOS, S/N","x":-4.7902,"y":37.8758},{"n":"BOMBEROS MALAGA TEATINOS","m":"Málaga","pr":"Málaga","d":"CALLE ISOLDA, 7","x":-4.4703,"y":36.709},{"n":"BOMBEROS MALAGA CENTRAL","m":"Málaga","pr":"Málaga","d":"PASEO MARTIRICOS, 14","x":-4.4269,"y":36.7287},{"n":"BOMBEROS HUESCAR","m":"Huéscar","pr":"Granada","d":"CALLE POLIGONO, 22","x":-2.5247,"y":37.8178},{"n":"BOMBEROS ALHAMA DE GRANADA","m":"Alhama de Granada","pr":"Granada","d":"CARRETERA A-402, S/N","x":-3.9943,"y":37.0007},{"n":"BOMBEROS IZNALLOZ","m":"Iznalloz","pr":"Granada","d":"AVENIDA MONTILLANA, 1","x":-3.5601,"y":37.4054},{"n":"BOMBEROS EL EJIDO","m":"El Ejido","pr":"Almería","d":"CALLE CALLE II (LR), 36","x":-2.7542,"y":36.789},{"n":"BOMBEROS PROVINCIA DE CADIZ OFICINA","m":"Cádiz","pr":"Cádiz","d":"AVENIDA CUATRO DE DICIEMBRE DE 1977, 18","x":-6.2937,"y":36.5333},{"n":"BOMBEROS BENALMADENA","m":"Benalmádena","pr":"Málaga","d":"CALLE PEDRO SERRANO, 20","x":-4.5328,"y":36.6056},{"n":"BOMBEROS MALAGA ALMUDENA","m":"Málaga","pr":"Málaga","d":"CAMINO PATO DEL, 35","x":-4.453,"y":36.6863},{"n":"BOMBEROS CHURRIANA","m":"Málaga","pr":"Málaga","d":"CALLE ESCRITORA CARMEN BRAVO-VILLASANTE, 16","x":-4.5129,"y":36.6675},{"n":"BOMBEROS TARIFA","m":"Tarifa","pr":"Cádiz","d":"CALLE IÑIGO VALLEJO GARCIA, RESCATADOR MARITIMO, 0","x":-5.6144,"y":36.0244},{"n":"BOMBEROS SAN PEDRO DE ALCANTARA","m":"Marbella","pr":"Málaga","d":"CARRIL PICAZA, 1","x":-4.9949,"y":36.4956},{"n":"BOMBEROS MAIRENA DEL ALCOR","m":"Mairena del Alcor","pr":"Sevilla","d":"CALLE INGENIERIA, 0","x":-5.76,"y":37.3583},{"n":"BOMBEROS JEREZ DE LA FRONTERA","m":"Jerez de la Frontera","pr":"Cádiz","d":"CALLE MARTIN FERRADOR, 2","x":-6.1278,"y":36.6891},{"n":"BOMBEROS ORCERA","m":"Orcera","pr":"Jaén","d":"CALLE A (POLG INDUS LAS PICHARDAS), 1","x":-2.6724,"y":38.3176},{"n":"BOMBEROS TORREMOLINOS","m":"Torremolinos","pr":"Málaga","d":"CALLE MIGUEL DE CERVANTES, 7","x":-4.5152,"y":36.6105},{"n":"BOMBEROS HUELVA","m":"Huelva","pr":"Huelva","d":"CALLE DOCTOR PEDRO NARANJO, 22","x":-6.9114,"y":37.2791},{"n":"BOMBEROS","m":"Peal de Becerro","pr":"Jaén","d":"CALLE PABLO RUIZ PICASSO, S/N","x":-3.1094,"y":37.9168},{"n":"BOMBEROS CONDADO DOÑANA","m":"Almonte","pr":"Huelva","d":"POLIGONO INDUSTRIAL MATALAGRANA, 53","x":-6.5044,"y":37.1866},{"n":"BOMBEROS ANDEVALO OCCIDENTAL","m":"Alosno","pr":"Huelva","d":"CARRETERA A-495, S/N","x":-7.1232,"y":37.5554},{"n":"BOMBEROS SIERRA ORIENTAL","m":"Aracena","pr":"Huelva","d":"CALLE E (P.I. CANTALGALLO), 1","x":-6.5701,"y":37.8968},{"n":"BOMBEROS COSTA OCCIDENTAL","m":"Ayamonte","pr":"Huelva","d":"CARRETERA A-499, S/N","x":-7.3393,"y":37.2435},{"n":"BOMBEROS SIERRA OCCIDENTAL","m":"Jabugo","pr":"Huelva","d":"CARRETERA HUELVA-BADAJOZ, KM 97","x":-6.7312,"y":37.914},{"n":"BOMBEROS CUENCA MINERA","m":"Minas de Riotinto","pr":"Huelva","d":"AVENIDA CONCHA ESPINA, 4","x":-6.5949,"y":37.6978},{"n":"BOMBEROS RIBERAS-CAMPIÑA","m":"San Juan del Puerto","pr":"Huelva","d":"CALLE PRADO DE SAN SEBASTIAN, S/N","x":-6.8295,"y":37.3155},{"n":"BOMBEROS RIBERAS-COSTA","m":"Punta Umbría","pr":"Huelva","d":"CARRETERA DE MALPICA A-5058 PUNTA UMBRIA HUELVA","x":-7.0245,"y":37.224},{"n":"BOMBEROS ANDEVALO ORIENTAL","m":"Valverde del Camino","pr":"Huelva","d":"CARRETERA A-496, 3","x":-6.7843,"y":37.5838},{"n":"BOMBEROS DOS HERMANAS","m":"Dos Hermanas","pr":"Sevilla","d":"CALLE LEOPOLDO ALAS CLARIN, 166","x":-5.9257,"y":37.2982},{"n":"BOMBEROS SEVILLA CENTRAL","m":"Sevilla","pr":"Sevilla","d":"CALLE DEMETRIO DE LOS RIOS, 4","x":-5.9844,"y":37.3847},{"n":"BOMBEROS POLIGONO SUR","m":"Sevilla","pr":"Sevilla","d":"CALLE ESCULTOR SEBASTIAN SANTOS, 1","x":-5.9598,"y":37.361},{"n":"BOMBEROS CARRETERA AMARILLA","m":"Sevilla","pr":"Sevilla","d":"CALLE RAFAEL BECA MATEOS, 13","x":-5.9474,"y":37.3926},{"n":"BOMBEROS ECIJA","m":"Écija","pr":"Sevilla","d":"AVENIDA JERONIMO DE AGUILAR, 10","x":-5.0769,"y":37.5521},{"n":"BOMBEROS LEBRIJA","m":"Lebrija","pr":"Sevilla","d":"AVENIDA JUAN PEÑA 'EL LEBRIJANO', 23","x":-6.0628,"y":36.9164},{"n":"BOMBEROS  ZONA NORTE ALBOX","m":"Albox","pr":"Almería","d":"CARRETERA DE LA ESTACION, S/N","x":-2.1515,"y":37.382},{"n":"BOMBEROS ALGECIRAS","m":"Algeciras","pr":"Cádiz","d":"CALLE ANDALUCIA, S/N","x":-5.4616,"y":36.1263},{"n":"BOMBEROS LA LINEA DE LA C.","m":"La Línea de la Concepción","pr":"Cádiz","d":"CAMINO ERMITA (DE LA), 0","x":-5.3536,"y":36.1857},{"n":"BOMBEROS GUADACORTE - LOS BARRIOS","m":"Los Barrios","pr":"Cádiz","d":"CARRETERA A-7, KM 113","x":-5.4318,"y":36.1936},{"n":"BOMBEROS SAN ROQUE","m":"San Roque","pr":"Cádiz","d":"AVENIDA DEL GOLF, S/N","x":-5.3361,"y":36.2473},{"n":"BOMBEROS CONIL DE LA FRONTERA","m":"Conil de la Frontera","pr":"Cádiz","d":"CARRIL PINALETA DE BOQUILLA, 3","x":-6.0913,"y":36.3304},{"n":"BOMBEROS CHICLANA","m":"Chiclana de la Frontera","pr":"Cádiz","d":"AVENIDA BAHIA DE CADIZ, 19","x":-6.1315,"y":36.4066},{"n":"BOMBEROS JIMENA DE LA FRONTERA","m":"Jimena de la Frontera","pr":"Cádiz","d":"CARRETERA A-369, KM 60","x":-5.4393,"y":36.4269},{"n":"BOMBEROS MEDINA SIDONIA","m":"Medina Sidonia","pr":"Cádiz","d":"CALLE CEUTA, S/N","x":-5.9408,"y":36.4703},{"n":"BOMBEROS SAN FERNANDO","m":"San Fernando","pr":"Cádiz","d":"CARRETERA BATERIA DE LA ARDILA (DE LA), 14","x":-6.2182,"y":36.453},{"n":"BOMBEROS PUERTO REAL TRES CAMINOS","m":"Puerto Real","pr":"Cádiz","d":"CALLE DORADA (DE LA), 54","x":-6.1742,"y":36.4697},{"n":"BOMBEROS VILLAMARTIN","m":"Villamartín","pr":"Cádiz","d":"CALLE PLASENCIA, S/N","x":-5.6539,"y":36.8552},{"n":"BOMBEROS ARCOS DE LA FRONTERA","m":"Arcos de la Frontera","pr":"Cádiz","d":"AVENIDA NARCISO MONTURIOL, 2","x":-5.8132,"y":36.7647},{"n":"BOMBEROS BAENA","m":"Baena","pr":"Córdoba","d":"CALLE POETA FRANCISCO BAENA, 10","x":-4.3164,"y":37.6214},{"n":"BOMBEROS PALMA DEL RIO","m":"Palma del Río","pr":"Córdoba","d":"URBANIZACION CERROS DE BELEN, 7","x":-5.2922,"y":37.72},{"n":"BOMBEROS PEÑARROYA-PUEBLONUEVO","m":"Peñarroya-Pueblonuevo","pr":"Córdoba","d":"VIA SIN NOMBRE, 161","x":-5.2789,"y":38.306},{"n":"BOMBEROS CORDOBA GRANADAL","m":"Córdoba","pr":"Córdoba","d":"AVENIDA DE LA VIRGEN DEL MAR, S/N","x":-4.7517,"y":37.8871},{"n":"BOMBEROS POZOBLANCO","m":"Pozoblanco","pr":"Córdoba","d":"CARRETERA ALCARACEJOS, 2","x":-4.8669,"y":38.379},{"n":"BOMBEROS PUENTE GENIL","m":"Puente Genil","pr":"Córdoba","d":"CALLE EL CARMEN, S/N","x":-4.739,"y":37.3931},{"n":"BOMBEROS PRIEGO DE CORDOBA","m":"Priego de Córdoba","pr":"Córdoba","d":"CARRETERA A-339, S/N","x":-4.213,"y":37.4436},{"n":"BOMBEROS LUCENA - CABRA","m":"Lucena","pr":"Córdoba","d":"CARRETERA A-340, S/N","x":-4.4757,"y":37.431},{"n":"BOMBEROS MONTILLA","m":"Montilla","pr":"Córdoba","d":"AVENIDA MARQUES DE LA VEGA DE ARMIJO, 0","x":-4.6322,"y":37.5857},{"n":"BOMBEROS JAEN","m":"Jaén","pr":"Jaén","d":"AVENIDA ANDALUCIA, S/N","x":-3.8114,"y":37.7786},{"n":"BOMBEROS LINARES","m":"Linares","pr":"Jaén","d":"AVENIDA ANDRES SEGOVIA, 0","x":-3.639,"y":38.0976},{"n":"BOMBEROS MALAGA MAYORAZGO","m":"Málaga","pr":"Málaga","d":"CALLE SERRETA DE LA, 1","x":-4.4003,"y":36.7329},{"n":"BOMBEROS FUENGIROLA","m":"Fuengirola","pr":"Málaga","d":"AVENIDA LEOPOLDO WERNER, 2","x":-4.6346,"y":36.5267},{"n":"BOMBEROS RINCON DE LA VICTORIA","m":"Rincón de la Victoria","pr":"Málaga","d":"CALLE LANCELOT, S/N","x":-4.2603,"y":36.7125},{"n":"BOMBEROS ALGATOCIN RETEN","m":"Algatocín","pr":"Málaga","d":"CARRETERA A-369, S/N","x":-5.2766,"y":36.5838},{"n":"BOMBEROS ALHAURIN DE LA TORRE","m":"Alhaurín de la Torre","pr":"Málaga","d":"CALLE CEPA, 23","x":-4.5761,"y":36.658},{"n":"BOMBEROS COLMENAR RETEN","m":"Colmenar","pr":"Málaga","d":"CARRETERA A-356, S/N","x":-4.3571,"y":36.913},{"n":"BOMBEROS NERJA","m":"Nerja","pr":"Málaga","d":"AVENIDA ALCALDE ANTONIO VILLASCLARAS, S/N","x":-3.8825,"y":36.7506},{"n":"BOMBEROS PERIANA","m":"Periana","pr":"Málaga","d":"CARRETERA A-7204, S/N","x":-4.1886,"y":36.9279},{"n":"BOMBEROS ARCHIDONA","m":"Archidona","pr":"Málaga","d":"CALLE VILLANUEVA DEL ROSARIO, 190","x":-4.3727,"y":37.0949},{"n":"BOMBEROS LOS PALACIOS","m":"Los Palacios y Villafranca","pr":"Sevilla","d":"CALLE EVOLUCION, 12","x":-5.9383,"y":37.1631},{"n":"BOMBEROS UTRERA","m":"Utrera","pr":"Sevilla","d":"CALLE MOLARES, 50","x":-5.7739,"y":37.1784},{"n":"BOMBEROS SANTIPONCE","m":"Santiponce","pr":"Sevilla","d":"AVENIDA DE EXTREMADURA, S/N","x":-6.0387,"y":37.4306},{"n":"BOMBEROS BRENES","m":"Brenes","pr":"Sevilla","d":"AVENIDA TOCINA, 24","x":-5.8665,"y":37.5515},{"n":"BOMBEROS OSUNA","m":"Osuna","pr":"Sevilla","d":"CALLE GANGA IBERICA, 23","x":-5.1334,"y":37.2414},{"n":"BOMBEROS SAUCEJO","m":"El Saucejo","pr":"Sevilla","d":"CALLE ARQUITECTO AGUSTIN RIOS, 10","x":-5.0894,"y":37.0718},{"n":"BOMBEROS ROQUETAS DE MAR","m":"Roquetas de Mar","pr":"Almería","d":"DISEMINADO CAÑADA ALGARROBO, 5","x":-2.6369,"y":36.7499},{"n":"BOMBEROS FUENTES DE ANDALUCIA","m":"Fuentes de Andalucía","pr":"Sevilla","d":"CALLE EXPLANADA DE LA ESTACION, 2","x":-5.3437,"y":37.4622},{"n":"BOMBEROS CAZALLA DE LA SIERRA","m":"Cazalla de la Sierra","pr":"Sevilla","d":"AVENIDA MARIA DEL MONTE (DE), 41","x":-5.7604,"y":37.9422},{"n":"BOMBEROS LORA DEL RIO","m":"Lora del Río","pr":"Sevilla","d":"CALLE AGRICULTURA, 5","x":-5.5513,"y":37.6537},{"n":"BOMBEROS CARMONA","m":"Carmona","pr":"Sevilla","d":"CALLE URBANO X, 3","x":-5.6538,"y":37.4649},{"n":"BOMBEROS ESTEPA","m":"Estepa","pr":"Sevilla","d":"CARRETERA EL SAUCEJO A-353, S/N","x":-4.8775,"y":37.2862},{"n":"BOMBEROS DE GERENA","m":"Gerena","pr":"Sevilla","d":"CARRETERA SE-520, S/N","x":-6.1496,"y":37.527},{"n":"BOMBEROS ARAHAL","m":"Arahal","pr":"Sevilla","d":"PLAZA CANTE JONDO, 9","x":-5.5397,"y":37.2601},{"n":"BOMBEROS CANTILLANA","m":"Cantillana","pr":"Sevilla","d":"CALLE CARRETERA DE LA ESTACION, 2","x":-5.8223,"y":37.6087},{"n":"BOMBEROS CONSTANTINA","m":"Constantina","pr":"Sevilla","d":"CALLE CAÑADA DEL PALACIO, 6","x":-5.6237,"y":37.8816},{"n":"BOMBEROS SEVILLA PINO MONTANO","m":"Sevilla","pr":"Sevilla","d":"CALLE AGRICULTORES, 8","x":-5.9663,"y":37.423},{"n":"BOMBEROS MONTELLANO","m":"Montellano","pr":"Sevilla","d":"CALLE ALARIFES, 5","x":-5.5787,"y":36.9919},{"n":"BOMBEROS PILAS","m":"Pilas","pr":"Sevilla","d":"PASEO BOMBEROS (DE LOS), 37","x":-6.2904,"y":37.3009},{"n":"BOMBEROS MANILVA","m":"Manilva","pr":"Málaga","d":"CALLE DOCTOR ALVAREZ LEIVA, 4","x":-5.2474,"y":36.3762},{"n":"BOMBEROS LA CARLOTA","m":"La Carlota","pr":"Córdoba","d":"CALLE ALEMANIA, 46","x":-4.9445,"y":37.669},{"n":"BOMBEROS CADIAR","m":"Cádiar","pr":"Granada","d":"CARRETERA CARRETERA GRANADA, 52","x":-3.1793,"y":36.9373},{"n":"BOMBEROS HINOJOSA DEL DUQUE","m":"Hinojosa del Duque","pr":"Córdoba","d":"CALLE CAMINO ANCHO, 65","x":-5.1338,"y":38.4933},{"n":"BOMBEROS ANDUJAR","m":"Andújar","pr":"Jaén","d":"CARRETERA MADRID-CADIZ, S/N","x":-4.0563,"y":38.0353},{"n":"BOMBEROS EL PUERTO DE SANTA MARIA","m":"El Puerto de Santa María","pr":"Cádiz","d":"CALLE PIANO, 1","x":-6.2135,"y":36.6142},{"n":"BOMBEROS GRANADA NORTE","m":"Granada","pr":"Granada","d":"AVENIDA JUAN PABLO II, 98","x":-3.6174,"y":37.2048},{"n":"BOMBEROS LA RINCONADA","m":"La Rinconada","pr":"Sevilla","d":"CALLE JOAQUIN FLORES MARQUEZ, 4","x":-5.9496,"y":37.4832},{"n":"BOMBEROS LOJA","m":"Loja","pr":"Granada","d":"AVENIDA DEL ACEITE (VIAL A), 2","x":-4.127,"y":37.1571},{"n":"BOMBEROS MAIRENA DEL ALJARAFE","m":"Mairena del Aljarafe","pr":"Sevilla","d":"AVENIDA OLMOS (LOS), 4","x":-6.0571,"y":37.3473},{"n":"BOMBEROS MOTRIL","m":"Motril","pr":"Granada","d":"AVENIDA NUESTRA SEÑORA DE LA CABEZA - VARADERO, 17","x":-3.5246,"y":36.7253},{"n":"BOMBEROS OLVERA","m":"Olvera","pr":"Cádiz","d":"CALLE MIGUEL HERNANDEZ, 0","x":-5.2591,"y":36.9319},{"n":"BOMBEROS SANLUCAR LA MAYOR","m":"Sanlúcar la Mayor","pr":"Sevilla","d":"CALLE GUILLERMO MARCONI, 2","x":-6.2014,"y":37.3659},{"n":"BOMBEROS MONACHIL","m":"Monachil","pr":"Granada","d":"GRUPO PRADO ALTO, 98","x":-3.3956,"y":37.0966},{"n":"BOMBEROS CAMPILLOS RETEN","m":"Campillos","pr":"Málaga","d":"CALLE MATEMATICO REY PASTOR, 2","x":-4.8725,"y":37.051},{"n":"BOMBEROS CANJAYAR RETEN","m":"Canjáyar","pr":"Almería","d":"CARRETERA A-348, S/N","x":-2.7452,"y":37.0137},{"n":"BOMBEROS UBEDA","m":"Úbeda","pr":"Jaén","d":"CALLE ZURBARAN, 15","x":-3.376,"y":38.0162},{"n":"BOMBEROS VELEZ-MALAGA","m":"Vélez-Málaga","pr":"Málaga","d":"CALLE CAMINO DE ALGARROBO, S/N","x":-4.0949,"y":36.7753},{"n":"BOMBEROS MIJAS","m":"Mijas","pr":"Málaga","d":"CAMINO VIEJO DE COIN, 73","x":-4.6397,"y":36.5383},{"n":"BOMBEROS COIN","m":"Coín","pr":"Málaga","d":"CALLE RONDA","x":-4.7155,"y":36.6798},{"n":"BOMBEROS MARTOS","m":"Martos","pr":"Jaén","d":"CALLE QUESADA, 2","x":-3.9654,"y":37.6982},{"n":"BOMBEROS MONTORO","m":"Montoro","pr":"Córdoba","d":"CARRETERA A-4 y E-5, PK. 357,500. VIA DE SERVICIO","x":-4.3664,"y":38.0105},{"n":"BOMBEROS MORON DE LA FRONTERA","m":"Morón de la Frontera","pr":"Sevilla","d":"AVENIDA CAL (LA), 19","x":-5.4573,"y":37.126}],"salvamar":[{"n":"Centro de Coordinación de Salvamento Marítimo de Almería","m":"Almería","pr":"Almería","d":"Muelle Levante, s/n - planta 12ª. 04071, Almería, Almería","x":-2.4665,"y":36.8306},{"n":"Centro de Coordinación de Salvamento Marítimo de Algeciras","m":"Algeciras","pr":"Cádiz","d":"Avenida Hispanidad, s/n. 11207, Algeciras, Cádiz","x":-5.4422,"y":36.1234},{"n":"Centro de Coordinación de Salvamento Marítimo de Tarifa","m":"Tarifa","pr":"Cádiz","d":"Carretera Cádiz-Málaga, km 85, Monte Camorro, s/n. 11380, Tarifa, Cádiz","x":-5.582,"y":36.0179},{"n":"Centro de Coordinación de Salvamento Marítimo de Cádiz","m":"Cádiz","pr":"Cádiz","d":"Muelle Alfonso XIII, s/n. 11006, Cádiz, Cádiz","x":-6.2912,"y":36.5348},{"n":"Centro de Coordinación de Salvamento Marítimo de Huelva","m":"Huelva","pr":"Huelva","d":"C/ Sanlúcar de Barrameda, 9, 2ª planta. 21001, Huelva, Huelva","x":-6.9584,"y":37.2538},{"n":"Base Estratégica de Lucha contra la Contaminación (BEC) Salvamento Marítimo Sevilla","m":"Dos Hermanas","pr":"Sevilla","d":"C/ Termas, 3. 41700, Dos Hermanas, Sevilla","x":-5.9948,"y":37.2744}],"ume":[{"n":"Segundo Batallón UME","m":"Morón de la Frontera","pr":"Sevilla","d":"Carretera A-360, pk 14. 41530, Morón de la Frontera, Sevilla","x":-5.5924,"y":37.1573}],"hosppub":[{"n":"HOSPITAL TORRECARDENAS","m":"Almería","pr":"Almería","d":"CALLE HERMANDAD DE DONANTES DE SANGRE, S/N","t":"Hospital","x":-2.441,"y":36.8621},{"n":"HOSPITAL LA INMACULADA","m":"Huércal-Overa","pr":"Almería","d":"AVENIDA DOCTORA ANA PARRA, S/N","t":"Hospital","x":-1.9419,"y":37.401},{"n":"HOSPITAL DE PONIENTE","m":"El Ejido","pr":"Almería","d":"PARAJE CTRA. ALMERIMAR, 31","t":"Hospital","x":-2.8036,"y":36.7535},{"n":"HOSPITAL DE ALTA RESOLUCION EL TOYO","m":"Almería","pr":"Almería","d":"CAMINO BOTICA (DE LA), 0","t":"Hospital","x":-2.312,"y":36.8509},{"n":"HOSPITAL PUNTA DE EUROPA","m":"Algeciras","pr":"Cádiz","d":"AVENIDA JOAN MANUEL SERRAT, 1","t":"Hospital","x":-5.4415,"y":36.1112},{"n":"HOSPITAL SAN CARLOS DE SAN FERNANDO","m":"San Fernando","pr":"Cádiz","d":"PASEO CAPITAN CONFORTO, S/N","t":"Hospital","x":-6.1947,"y":36.48},{"n":"HOSPITAL PUERTA DEL MAR","m":"Cádiz","pr":"Cádiz","d":"AVENIDA ANA DE VIYA, 0","t":"Hospital","x":-6.2783,"y":36.5089},{"n":"HOSPITAL DE JEREZ DE LA FRONTERA","m":"Jerez de la Frontera","pr":"Cádiz","d":"AVENIDA REINA SOFIA, 5","t":"Hospital","x":-6.1483,"y":36.6991},{"n":"HOSPITAL DE PUERTO REAL","m":"Puerto Real","pr":"Cádiz","d":"CARRETERA N-IV, KM 665","t":"Hospital","x":-6.1515,"y":36.52},{"n":"HOSPITAL DE LA LINEA DE LA CONCEPCION","m":"La Línea de la Concepción","pr":"Cádiz","d":"RONDA NORTE, S/N","t":"Hospital","x":-5.3549,"y":36.1749},{"n":"HOSPITAL INFANTA MARGARITA","m":"Cabra","pr":"Córdoba","d":"AVENIDA GONGORA, 9","t":"Hospital","x":-4.4253,"y":37.4683},{"n":"HOSPITAL GENERAL DEL H.U. REINA SOFIA","m":"Córdoba","pr":"Córdoba","d":"AVENIDA MENENDEZ PIDAL, S/N","t":"Hospital","x":-4.7986,"y":37.8677},{"n":"HOSPITAL LOS MORALES","m":"Córdoba","pr":"Córdoba","d":"CARRETERA SANATORIO DE LOS MORALES (DEL), 0","t":"Hospital","x":-4.8052,"y":37.9344},{"n":"HOSPITAL MATERNO-INFANTIL DEL H.U. REINA SOFIA","m":"Córdoba","pr":"Córdoba","d":"AVENIDA MENENDEZ PIDAL, S/N","t":"Hospital","x":-4.797,"y":37.8672},{"n":"HOSPITAL PROVINCIAL","m":"Córdoba","pr":"Córdoba","d":"AVENIDA MENENDEZ PIDAL, 3","t":"Hospital","x":-4.7918,"y":37.8693},{"n":"HOSPITAL VALLE DE LOS PEDROCHES","m":"Pozoblanco","pr":"Córdoba","d":"AVENIDA MARCOS REDONDO, 46","t":"Hospital","x":-4.8497,"y":38.384},{"n":"HOSPITAL DE MONTILLA","m":"Montilla","pr":"Córdoba","d":"CARRETERA N-311, KM 47","t":"Hospital","x":-4.6482,"y":37.5649},{"n":"HOSPITAL DE ALTA RESOLUCION DE PUENTE GENIL","m":"Puente Genil","pr":"Córdoba","d":"CALLE MIGUEL QUINTERO, S/N","t":"Hospital","x":-4.7515,"y":37.3992},{"n":"HOSPITAL DE ALTA RESOLUCION VALLE DEL GUADIATO","m":"Peñarroya-Pueblonuevo","pr":"Córdoba","d":"CALLE PIO XII","t":"Hospital","x":-5.2705,"y":38.3086},{"n":"HOSPITAL DE BAZA","m":"Baza","pr":"Granada","d":"LUGAR CORTIJO DEL PORTAJO, 0","t":"Hospital","x":-2.7521,"y":37.5012},{"n":"HOSPITAL LA MERCED","m":"Osuna","pr":"Sevilla","d":"AVENIDA CONSTITUCION (LA), 2","t":"Hospital","x":-5.0961,"y":37.2335},{"n":"HOSPITAL GENERAL DEL H.U. VIRGEN DE LAS NIEVES","m":"Granada","pr":"Granada","d":"AVENIDA FUERZAS ARMADAS, 2","t":"Hospital","x":-3.6099,"y":37.1881},{"n":"HOSPITAL MATERNO-INFANTIL DEL H.U. VIRGEN DE LAS NIEVES","m":"Granada","pr":"Granada","d":"CALLE RIBERA DEL BEIRO, 6","t":"Hospital","x":-3.611,"y":37.1893},{"n":"HOSPITAL DE NEUROTRAUMATOLOGIA Y REHABILITACION DEL H.U. VIRGEN DE LAS NIEVES","m":"Granada","pr":"Granada","d":"AVENIDA JUAN PABLO II, 4","t":"Hospital","x":-3.608,"y":37.1932},{"n":"HOSPITAL SANTA ANA","m":"Motril","pr":"Granada","d":"AVENIDA ENRIQUE MARTIN CUEVAS, 28","t":"Hospital","x":-3.5209,"y":36.7553},{"n":"HOSPITAL DE ALTA RESOLUCION DE GUADIX","m":"Guadix","pr":"Granada","d":"AVENIDA MARIANA DE PINEDA, S/N","t":"Hospital","x":-3.1459,"y":37.3101},{"n":"HOSPITAL DE ALTA RESOLUCION DE LOJA","m":"Loja","pr":"Granada","d":"AVENIDA TIERNO GALVAN, 5","t":"Hospital","x":-4.1538,"y":37.171},{"n":"HOSPITAL SAN CECILIO","m":"Granada","pr":"Granada","d":"AVENIDA DOCTOR JESUS CANDEL FABREGAS, 2","t":"Hospital","x":-3.6052,"y":37.1474},{"n":"HOSPITAL INFANTA ELENA","m":"Huelva","pr":"Huelva","d":"CARRETERA SEVILLA-HUELVA, S/N","t":"Hospital","x":-6.9127,"y":37.2807},{"n":"HOSPITAL JUAN RAMON JIMENEZ","m":"Huelva","pr":"Huelva","d":"RONDA EXTERIOR NORTE, S/N","t":"Hospital","x":-6.9265,"y":37.2804},{"n":"HOSPITAL VAZQUEZ DIAZ","m":"Huelva","pr":"Huelva","d":"CARRETERA DE SEVILLA, S/N","t":"Hospital","x":-6.9211,"y":37.2796},{"n":"HOSPITAL DE RIOTINTO","m":"Minas de Riotinto","pr":"Huelva","d":"AVENIDA ESQUILA (LA), 5","t":"Hospital","x":-6.5973,"y":37.6924},{"n":"HOSPITAL NEUROTRAUMATOLOGICO DEL H. U. DE JAEN","m":"Jaén","pr":"Jaén","d":"ACCESO RECINTO HOSPITALARIO PRINCESA DE ESPAÑA, 0","t":"Hospital","x":-3.7789,"y":37.7958},{"n":"HOSPITAL DOCTOR SAGAZ","m":"Jaén","pr":"Jaén","d":"CARRETERA JA-3303, 0","t":"Hospital","x":-3.8179,"y":37.7705},{"n":"HOSPITAL GENERAL DEL H. U. DE JAEN","m":"Jaén","pr":"Jaén","d":"AVENIDA EJERCITO ESPAÑOL, 16","t":"Hospital","x":-3.7938,"y":37.7747},{"n":"HOSPITAL MATERNO-INFANTIL DEL H. U. DE JAEN","m":"Jaén","pr":"Jaén","d":"AVENIDA EJERCITO ESPAÑOL, 16","t":"Hospital","x":-3.7938,"y":37.7747},{"n":"HOSPITAL SAN AGUSTIN","m":"Linares","pr":"Jaén","d":"AVENIDA SAN CRISTOBAL, 0","t":"Hospital","x":-3.6435,"y":38.0896},{"n":"HOSPITAL SAN JUAN DE LA CRUZ","m":"Úbeda","pr":"Jaén","d":"AVENIDA CIUDAD DE LINARES (DE LA), 41","t":"Hospital","x":-3.3841,"y":38.0198},{"n":"HOSPITAL ALTO GUADALQUIVIR","m":"Andújar","pr":"Jaén","d":"AVENIDA DE BLAS INFANTE, S/N","t":"Hospital","x":-4.0312,"y":38.0401},{"n":"HOSPITAL DE ALTA RESOLUCION SIERRA DE SEGURA","m":"Puente de Génave","pr":"Jaén","d":"CARRETERA PUENTE DE GENAVE A PUERTA DEL SEGURA, KM 0300","t":"Hospital","x":-2.7871,"y":38.3603},{"n":"HOSPITAL DE ALTA RESOLUCION DE ALCAUDETE","m":"Alcaudete","pr":"Jaén","d":"CAMINO VIEJO FUENSANTA, 2","t":"Hospital","x":-4.0809,"y":37.5869},{"n":"HOSPITAL DE ALTA RESOLUCION DE ALCALA LA REAL","m":"Alcalá la Real","pr":"Jaén","d":"AVENIDA IBEROAMERICA, S/N","t":"Hospital","x":-3.931,"y":37.4544},{"n":"HOSPITAL COSTA DEL SOL","m":"Marbella","pr":"Málaga","d":"AUTOVIA A-7, KM 187","t":"Hospital","x":-4.8265,"y":36.5076},{"n":"HOSPITAL GENERAL DEL H.U.R. DE MALAGA","m":"Málaga","pr":"Málaga","d":"AVENIDA CARLOS DE HAYA, 80","t":"Hospital","x":-4.4489,"y":36.7226},{"n":"HOSPITAL MATERNO-INFANTIL DEL H.U.R. DE MALAGA","m":"Málaga","pr":"Málaga","d":"AVENIDA ARROYO DE LOS ANGELES, 56","t":"Hospital","x":-4.4324,"y":36.7291},{"n":"HOSPITAL CIVIL","m":"Málaga","pr":"Málaga","d":"PLAZA HOSPITAL CIVIL, 1","t":"Hospital","x":-4.4306,"y":36.727},{"n":"HOSPITAL VALLE DEL GUADALHORCE DE CARTAMA","m":"Cártama","pr":"Málaga","d":"AUTOVIA A-381, KM 42","t":"Hospital","x":-4.6718,"y":36.7214},{"n":"HOSPITAL MARITIMO DE TORREMOLINOS","m":"Torremolinos","pr":"Málaga","d":"CALLE SANATORIO, 5","t":"Hospital","x":-4.4882,"y":36.6375},{"n":"HOSPITAL VIRGEN DE LA VICTORIA","m":"Málaga","pr":"Málaga","d":"CALLE DEMOSTENES, 8","t":"Hospital","x":-4.4776,"y":36.7193},{"n":"HOSPITAL LA AXARQUIA","m":"Vélez-Málaga","pr":"Málaga","d":"AVENIDA DEL SOL, S/N","t":"Hospital","x":-4.0901,"y":36.7516},{"n":"HOSPITAL DE ANTEQUERA","m":"Antequera","pr":"Málaga","d":"AVENIDA POETA MUÑOZ ROJAS, 0","t":"Hospital","x":-4.529,"y":37.0309},{"n":"HOSPITAL DE ALTA RESOLUCION DE BENALMADENA","m":"Benalmádena","pr":"Málaga","d":"AVENIDA CIBELES (DE), 2","t":"Hospital","x":-4.5573,"y":36.5997},{"n":"HOSPITAL LA SERRANIA","m":"Ronda","pr":"Málaga","d":"VIAL HOSPITAL NUEVO RONDA, 1","t":"Hospital","x":-5.1464,"y":36.7224},{"n":"HOSPITAL EL TOMILLAR","m":"Alcalá de Guadaíra","pr":"Sevilla","d":"CARRETERA ALCALA-DOS HERMANAS, KM 6","t":"Hospital","x":-5.9005,"y":37.2984},{"n":"HOSPITAL VIRGEN DE VALME","m":"Sevilla","pr":"Sevilla","d":"AVENIDA BELLAVISTA, 72","t":"Hospital","x":-5.9712,"y":37.3189},{"n":"HOSPITAL SAN LAZARO","m":"Sevilla","pr":"Sevilla","d":"AVENIDA DOCTOR FEDRIANI, 56","t":"Hospital","x":-5.9832,"y":37.4142},{"n":"HOSPITAL VIRGEN MACARENA","m":"Sevilla","pr":"Sevilla","d":"AVENIDA DOCTOR FEDRIANI, 3","t":"Hospital","x":-5.9867,"y":37.4062},{"n":"HOSPITAL INFANTIL","m":"Sevilla","pr":"Sevilla","d":"CALLE TORCUATO LUCA DE TENA, 25","t":"Hospital","x":-5.9773,"y":37.3624},{"n":"HOSPITAL DE REHABILITACION Y TRAUMATOLOGIA DEL H.U. VIRGEN DEL ROCIO","m":"Sevilla","pr":"Sevilla","d":"CALLE TORCUATO LUCA DE TENA, 21","t":"Hospital","x":-5.979,"y":37.3618},{"n":"HOSPITAL DUQUES DEL INFANTADO","m":"Sevilla","pr":"Sevilla","d":"CALLE SOR GREGORIA DE SANTA TERESA, 18","t":"Hospital","x":-5.9875,"y":37.3631},{"n":"HOSPITAL DE LA MUJER","m":"Sevilla","pr":"Sevilla","d":"CALLE TORCUATO LUCA DE TENA, 23","t":"Hospital","x":-5.9779,"y":37.3627},{"n":"HOSPITAL GENERAL DEL H.U. VIRGEN DEL ROCIO","m":"Sevilla","pr":"Sevilla","d":"AVENIDA MANUEL SIUROT, 41","t":"Hospital","x":-5.9815,"y":37.3614},{"n":"HOSPITAL PSIQUIATRICO PENITENCIARIO","m":"Sevilla","pr":"Sevilla","d":"CAMINO HACIENDA DEL HOYO, 2","t":"Hospital","x":-5.847,"y":37.39},{"n":"HOSPITAL DE ALTA RESOLUCION DE MORON DE LA FRONTERA","m":"Morón de la Frontera","pr":"Sevilla","d":"PLAZA SAN FRANCISCO, 14","t":"Hospital","x":-5.4543,"y":37.1172},{"n":"HOSPITAL SAN JUAN DE DIOS","m":"Bormujos","pr":"Sevilla","d":"AVENIDA SAN JUAN DE DIOS, S/N","t":"Hospital","x":-6.0844,"y":37.3731},{"n":"HOSPITAL DE ALTA RESOLUCION DE UTRERA","m":"Utrera","pr":"Sevilla","d":"AVENIDA BRIGADAS INTERNACIONALES, 0","t":"Hospital","x":-5.7851,"y":37.1763},{"n":"HOSPITAL DE ALTA RESOLUCION SIERRA NORTE","m":"Constantina","pr":"Sevilla","d":"AVENIDA DOCTOR LARRAURI, 1","t":"Hospital","x":-5.6194,"y":37.8621},{"n":"HOSPITAL DE ALTA RESOLUCION DE LEBRIJA","m":"Lebrija","pr":"Sevilla","d":"AVENIDA EL CUERVO, S/N","t":"Hospital","x":-6.0718,"y":36.9107},{"n":"HOSPITAL DE ALTA RESOLUCION DE ECIJA","m":"Écija","pr":"Sevilla","d":"AVENIDA DOCTOR SANCHEZ MALO, 73","t":"Hospital","x":-5.0925,"y":37.5328},{"n":"HOSPITAL DE ALTA RESOLUCION LA JANDA","m":"Vejer de la Frontera","pr":"Cádiz","d":"CARRETERA A-2230, S/N","t":"Hospital","x":-5.9814,"y":36.2509},{"n":"HOSPITAL DE ALTA RESOLUCION SIERRA DE CAZORLA","m":"Cazorla","pr":"Jaén","d":"CARRETERA A-319 CAZORLA-PEAL DEL BECERRO","t":"Hospital","x":-3.0147,"y":37.9157},{"n":"HOSPITAL DOCTOR MUÑOZ CARIÑANOS","m":"Sevilla","pr":"Sevilla","d":"AVENIDA DE JEREZ, S/N","t":"Hospital","x":-5.9719,"y":37.346},{"n":"HOSPITAL DE ALTA RESOLUCION DE ESTEPONA","m":"Estepona","pr":"Málaga","d":"CALLE IRENE VILLA GONZALEZ, 9","t":"Hospital","x":-5.1972,"y":36.4119},{"n":"HOSPITAL PUERTA DE ANDALUCIA","m":"Jaén","pr":"Jaén","d":"CARRETERA J-12, 32","t":"Hospital","x":-3.7797,"y":37.7948},{"n":"HOSPITAL MATERNO INFANTIL","m":"Almería","pr":"Almería","d":"CALLE HERMANDAD DE DONANTES DE SANGRE, S/N","t":"Hospital","x":-2.4422,"y":36.862},{"n":"HOSPITAL DE PALMA DEL RIO","m":"Palma del Río","pr":"Córdoba","d":"AVENIDA V CALIFA, S/N","t":"Hospital","x":-5.2691,"y":37.702}],"hosppriv":[{"n":"HOSPITAL SAN JUAN DE DIOS DE SEVILLA","m":"Sevilla","pr":"Sevilla","d":"AVENIDA EDUARDO DATO, 42","t":"Hospital","x":-5.9691,"y":37.3819},{"n":"HOSPITAL QUIRONSALUD MARBELLA","m":"Marbella","pr":"Málaga","d":"AVENIDA SEVERO OCHOA, 32","t":"Hospital","x":-4.8743,"y":36.5089},{"n":"HOSPITAL PSIQUIATRICO SAN FRANCISCO DE ASIS","m":"Málaga","pr":"Málaga","d":"AVENIDA HERNAN NUÑEZ DE TOLEDO, 5","t":"Hospital","x":-4.3685,"y":36.7293},{"n":"HOSPITAL VITHAS LA SALUD","m":"Granada","pr":"Granada","d":"AVENIDA SANTA MARIA DE LA ALHAMBRA, 6","t":"Hospital","x":-3.5729,"y":37.1645},{"n":"CLINICA NUESTRA SEÑORA DEL PILAR","m":"Málaga","pr":"Málaga","d":"PASEO SANCHA, 15","t":"Hospital","x":-4.4042,"y":36.7217},{"n":"HOSPITAL SAN AGUSTIN","m":"Dos Hermanas","pr":"Sevilla","d":"AVENIDA 4 DE DICIEMBRE, 53","t":"Hospital","x":-5.9363,"y":37.2806},{"n":"CENTRO ASISTENCIAL SAN JUAN DE DIOS","m":"Málaga","pr":"Málaga","d":"CAMINO CASABERMEJA, 126","t":"Hospital","x":-4.4241,"y":36.7578},{"n":"CLINICA SANTA ELENA","m":"Torremolinos","pr":"Málaga","d":"CALLE SARDINERO, S/N","t":"Hospital","x":-4.4878,"y":36.6453},{"n":"CLINICA LOS ALAMOS","m":"Jerez de la Frontera","pr":"Cádiz","d":"AVENIDA TAMARIX (DEL), 4","t":"Hospital","x":-6.1307,"y":36.7041},{"n":"HOSPITAL VIRGEN DEL MAR","m":"Almería","pr":"Almería","d":"CARRETERA DEL MAMI, KM 1","t":"Hospital","x":-2.4175,"y":36.856},{"n":"HOSPITAL VITHAS PARQUE SAN ANTONIO","m":"Málaga","pr":"Málaga","d":"AVENIDA PINTOR JOAQUIN SOROLLA, 2","t":"Hospital","x":-4.3976,"y":36.723},{"n":"HELICOPTEROS SANITARIOS HOSPITAL","m":"Marbella","pr":"Málaga","d":"URBANIZACION ALCAZABA (LA), 20","t":"Hospital","x":-4.9507,"y":36.4938},{"n":"HC MARBELLA INTERNATIONAL HOSPITAL","m":"Marbella","pr":"Málaga","d":"CALLE VENTURA DEL MAR, 11","t":"Hospital","x":-4.9704,"y":36.485},{"n":"HOSPITAL OCHOA","m":"Marbella","pr":"Málaga","d":"AVENIDA SEVERO OCHOA, S/N - MAYORAL","t":"Hospital","x":-4.882,"y":36.5073},{"n":"HOSPITAL FATIMA","m":"Sevilla","pr":"Sevilla","d":"GLORIETA MEJICO, 1","t":"Hospital","x":-5.988,"y":37.369},{"n":"HOSPITAL DE LA INMACULADA CONCEPCION","m":"Granada","pr":"Granada","d":"CALLE DOCTOR ALEJANDRO OTERO, 8","t":"Hospital","x":-3.608,"y":37.1639},{"n":"CLINICA EL SERANIL","m":"Vélez-Málaga","pr":"Málaga","d":"CARRETERA ALMERIA, KM 261","t":"Hospital","x":-4.1994,"y":36.7158},{"n":"FUNDACION CUDECA. CENTRO DE CUIDADOS PALIATIVOS","m":"Benalmádena","pr":"Málaga","d":"AVENIDA DEL COSMOS, S/N","t":"Hospital","x":-4.5484,"y":36.6025},{"n":"HOSPITAL NUESTRA SEÑORA DE LA SALUD HLA,SL","m":"Cádiz","pr":"Cádiz","d":"CALLE FEDUCHY, 12","t":"Hospital","x":-6.2956,"y":36.532},{"n":"HOSPITAL QUIRONSALUD SAGRADO CORAZON","m":"Sevilla","pr":"Sevilla","d":"CALLE RAFAEL SALGADO, 3","t":"Hospital","x":-5.9797,"y":37.3596},{"n":"HOSPITAL QUIRONSALUD HUELVA","m":"Huelva","pr":"Huelva","d":"CALLE PUNTA UMBRIA, 4","t":"Hospital","x":-6.9539,"y":37.2669},{"n":"HOSPITAL QUIRONSALUD INFANTA LUISA","m":"Sevilla","pr":"Sevilla","d":"CALLE SAN JACINTO, 87","t":"Hospital","x":-6.0083,"y":37.3815},{"n":"CLINICA LOS NARANJOS","m":"Huelva","pr":"Huelva","d":"PASEO NARANJOS (DE LOS), 1","t":"Hospital","x":-6.9493,"y":37.2624},{"n":"FREMAP, HOSPITAL Y CENTRO DE REHABILITACION DE SEVILLA","m":"Sevilla","pr":"Sevilla","d":"AVENIDA DE JEREZ, S/N","t":"Hospital","x":-5.9746,"y":37.3428},{"n":"HOSPITAL DOCTOR LOPEZ CANO","m":"Cádiz","pr":"Cádiz","d":"PLAZA DE MADRIZ, S/N","t":"Hospital","x":-6.2739,"y":36.5023},{"n":"HOSPITEN ESTEPONA","m":"Estepona","pr":"Málaga","d":"CARRETERA NACIONAL-340, KM 162","t":"Hospital","x":-5.0841,"y":36.4527},{"n":"HOSPITAL JEREZ PUERTA DEL SUR","m":"Jerez de la Frontera","pr":"Cádiz","d":"AVENIDA PUERTA DEL SUR, S/N","t":"Hospital","x":-6.1398,"y":36.6694},{"n":"HOSPITAL VICTORIA EUGENIA DE LA CRUZ ROJA ESPAÑOLA","m":"Sevilla","pr":"Sevilla","d":"AVENIDA CRUZ ROJA (LA), 1","t":"Hospital","x":-5.9824,"y":37.4006},{"n":"HOSPITAL VIAMED BAHIA DE CADIZ","m":"Chiclana de la Frontera","pr":"Cádiz","d":"CALLE AYALA, 2","t":"Hospital","x":-6.15,"y":36.4208},{"n":"HM MALAGA","m":"Málaga","pr":"Málaga","d":"AVENIDA CARLOS DE HAYA, 121","t":"Hospital","x":-4.454,"y":36.7234},{"n":"HOSPITAL LA ARRUZAFA - INSTITUTO DE OFTALMOLOGIA","m":"Córdoba","pr":"Córdoba","d":"AVENIDA ARRUZAFA (DE LA), 9","t":"Hospital","x":-4.7931,"y":37.9045},{"n":"HOSPITAL VIAMED NOVO SANCTI PETRI","m":"Chiclana de la Frontera","pr":"Cádiz","d":"AVENIDA OCTAVIO AUGUSTO, 1","t":"Hospital","x":-6.1591,"y":36.3562},{"n":"CLINICA DE SALUD MENTAL MIGUEL DE MAÑARA","m":"Dos Hermanas","pr":"Sevilla","d":"AVENIDA HERMANOS DE LA CRUZ BLANCA, 1","t":"Hospital","x":-5.9186,"y":37.333},{"n":"HOSPITAL CRUZ ROJA DE CORDOBA","m":"Córdoba","pr":"Córdoba","d":"PASEO VICTORIA (DE LA), 0","t":"Hospital","x":-4.7846,"y":37.8803},{"n":"HOSPITAL EL ANGEL","m":"Málaga","pr":"Málaga","d":"CALLE CORREGIDOR NICOLAS ISIDRO, 16","t":"Hospital","x":-4.4532,"y":36.7151},{"n":"CLINICA CRISTO REY","m":"Jaén","pr":"Jaén","d":"PASEO ESTACION (LA), 40","t":"Hospital","x":-3.789,"y":37.7756},{"n":"HOSPITAL VIAMED SANTA ANGELA DE LA CRUZ","m":"Sevilla","pr":"Sevilla","d":"AVENIDA DE JEREZ, 59","t":"Hospital","x":-5.9661,"y":37.3277},{"n":"HOSPITAL MEDITERRANEO","m":"Almería","pr":"Almería","d":"CALLE NUEVA MUSA, 8","t":"Hospital","x":-2.4353,"y":36.8206},{"n":"HOSPITAL QUIRONSALUD MALAGA","m":"Málaga","pr":"Málaga","d":"CALLE PILAR LORENGAR, 2","t":"Hospital","x":-4.4574,"y":36.6847},{"n":"HOSPITAL NISA SEVILLA-ALJARAFE","m":"Castilleja de la Cuesta","pr":"Sevilla","d":"AVENIDA PLACIDO FERNANDEZ VIAGAS, S/N","t":"Hospital","x":-6.062,"y":37.3925},{"n":"HOSPITAL VITHAS XANIT HOSPITAL INTERNACIONAL","m":"Benalmádena","pr":"Málaga","d":"AVENIDA DE LOS ARGONAUTAS, S/N","t":"Hospital","x":-4.5585,"y":36.5982},{"n":"HOSPITAL SAN RAFAEL","m":"Granada","pr":"Granada","d":"CALLE SAN JUAN DE DIOS, 19","t":"Hospital","x":-3.6027,"y":37.181},{"n":"HOSPITAL CENTRO DE ANDALUCIA","m":"Lucena","pr":"Córdoba","d":"CALLE PONTEVEDRA, 10","t":"Hospital","x":-4.5081,"y":37.3857},{"n":"CENTRO DE REPRODUCCION ASISTIDA DE MARBELLA (CERAM)","m":"Marbella","pr":"Málaga","d":"CALLE MAESTRA DOÑA CAROLA, 8","t":"Hospital","x":-4.8969,"y":36.5168},{"n":"RESIDENCIA DE SALUD MENTAL NUESTRA SEÑORA DEL CARMEN","m":"Bormujos","pr":"Sevilla","d":"AVENIDA DEL RIO PUDIO, S/N","t":"Hospital","x":-6.0701,"y":37.3787},{"n":"HOSPITAL SAN JUAN GRANDE","m":"Jerez de la Frontera","pr":"Cádiz","d":"CALLE HERMANDAD DEL ROCIO DE JEREZ, 1","t":"Hospital","x":-6.1492,"y":36.692},{"n":"HOSPITAL DOCTOR GÁLVEZ","m":"Málaga","pr":"Málaga","d":"CALLE SAN AGUSTIN, 1","t":"Hospital","x":-4.4194,"y":36.7208},{"n":"HOSPITAL QUIRON CAMPO DE GIBRALTAR","m":"Los Barrios","pr":"Cádiz","d":"AVENIDA EMPRESARIOS (DE LOS), 20 - ARTTYSUR","t":"Hospital","x":-5.4314,"y":36.1857},{"n":"HOSPITAL QUIRONSALUD CORDOBA","m":"Córdoba","pr":"Córdoba","d":"AVENIDA AEROPUERTO, S/N","t":"Hospital","x":-4.8021,"y":37.8721},{"n":"VITHAS SALUD RINCÓN MEDICAL CENTER NERJA","m":"Nerja","pr":"Málaga","d":"CALLE ANTONIO FERRANDIS \"CHANQUETE\", 5 - RIOSOL 1","t":"Hospital","x":-3.8807,"y":36.7472},{"n":"ITA CLINIC BCN","m":"Sevilla","pr":"Sevilla","d":"CALLE VIDRIO, 32","t":"Hospital","x":-5.9863,"y":37.3888},{"n":"CLINICA NUESTRA SEÑORA DE ARANZAZU","m":"Sevilla","pr":"Sevilla","d":"CALLE JESUS DEL GRAN PODER, 29","t":"Hospital","x":-5.9957,"y":37.3958},{"n":"CLINICA SANTA ISABEL","m":"Sevilla","pr":"Sevilla","d":"CALLE LUIS MONTOTO, 100","t":"Hospital","x":-5.9755,"y":37.387},{"n":"CENYT HOSPITAL","m":"Estepona","pr":"Málaga","d":"AVENIDA ANDALUCIA, 4","t":"Hospital","x":-5.1387,"y":36.4281},{"n":"HOSPITAL SAN JUAN DE DIOS DE CORDOBA","m":"Córdoba","pr":"Córdoba","d":"AVENIDA BRILLANTE (DEL), 106","t":"Hospital","x":-4.7933,"y":37.9086},{"n":"CENTRO ASISTENCIAL HERMANAS HOSPITALARIAS DEL SAGRADO CORAZÓN DE JESÚS","m":"Málaga","pr":"Málaga","d":"CALLE SAN JUAN BOSCO, 41","t":"Hospital","x":-4.4221,"y":36.7335}],"psico":[{"n":"Colegio Oficial de Psicología de Andalucía Oriental Granada","m":"Granada","pr":"Granada","d":"C/ San Isidro, 23. 18005, Granada, Granada","x":-3.5989,"y":37.1704},{"n":"Colegio Oficial de Psicología de Andalucía Oriental Málaga","m":"Málaga","pr":"Málaga","d":"Avenida Cánovas del Castillo, 4, Entreplanta 1º derecha. 29016, Málaga, Málaga","x":-4.4116,"y":36.7195},{"n":"Colegio Oficial de Psicología de Andalucía Oriental Almería","m":"Almería","pr":"Almería","d":"C/ Montellano, 2 Bajo. 04007, Almería, Almería","x":-2.4583,"y":36.8327},{"n":"Colegio Oficial de Psicología de Andalucía Oriental Jaén","m":"Jaén","pr":"Jaén","d":"Plaza de la Libertad, 9 1ª planta. 23003, Jaén, Jaén","x":-3.7871,"y":37.7708},{"n":"Colegio Oficial de Psicología de Andalucía Oriental Cádiz","m":"Cádiz","pr":"Cádiz","d":"C/ San Juan Bosco, 3. 11008, Cádiz, Cádiz","x":-6.2781,"y":36.5139},{"n":"Colegio Oficial de Psicología de Andalucía Oriental Córdoba","m":"Córdoba","pr":"Córdoba","d":"C/ Almendro, 4. 14006, Córdoba, Córdoba","x":-4.7836,"y":37.896},{"n":"Colegio Oficial de Psicología de Andalucía Oriental Huelva","m":"Huelva","pr":"Huelva","d":"C/ Maestro Salvador López, 18. 21003, Huelva, Huelva","x":-6.9413,"y":37.2536},{"n":"Colegio Oficial de Psicología de Andalucía Oriental Sevilla","m":"Sevilla","pr":"Sevilla","d":"C/ Carlos de Cepeda, 2. 41005, Sevilla, Sevilla","x":-5.974,"y":37.3786},{"n":"Servicios Centrales Colegio Oficial de Psicología","m":"Sevilla","pr":"Sevilla","d":"C/ Espinosa y Cárcel, 17, ACC.C. 41005, Sevilla, Sevilla","x":-5.9741,"y":37.378}],"adif":[{"n":"Centro de Protección y Seguridad de ADIF Cádiz","m":"Cádiz","pr":"Cádiz","d":"Muelle Reina Victoria, s/n. 11006, Cádiz, Cádiz","x":-6.2887,"y":36.5302},{"n":"Centro de Protección y Seguridad de ADIF Córdoba","m":"Córdoba","pr":"Córdoba","d":"Avenida América, s/n. 14005, Córdoba, Córdoba","x":-4.789,"y":37.8888},{"n":"Centro de Protección y Seguridad de ADIF Sevilla","m":"Sevilla","pr":"Sevilla","d":"Avenida Kansas City, s/n. 41007, Sevilla, Sevilla","x":-5.9757,"y":37.3917},{"n":"Centro de Protección y Seguridad de ADIF Málaga","m":"Málaga","pr":"Málaga","d":"C/ Explanada de la Estación, s/n. 29002, Málaga, Málaga","x":-4.4316,"y":36.7121},{"n":"Centro de Protección y Seguridad de ADIF Valencia","m":"Pulpí","pr":"Almería","d":"Calle Ferrocarril. 0640, Pulpí, Almería","x":-1.7494,"y":37.3992},{"n":"Centro de Protección y Seguridad de ADIF Granada","m":"Granada","pr":"Granada","d":"Avenida de los Andaluces, s/n. 18014, Granada, Granada","x":-3.6091,"y":37.1841},{"n":"Centro de Protección y Seguridad de ADIF Manzanares Jaén","m":"Jaén","pr":"Jaén","d":"Plaza Jaén por la Paz, 1. 23007, Jaén, Jaén","x":-3.7907,"y":37.7798}],"cruzroja":[{"n":"Cruz Roja Asamblea Local de Pulpí","m":"Pulpí","pr":"Almería","d":"C/ Diego Municipal, 3. 04640, Pulpí, Almería","x":-1.7441,"y":37.4114},{"n":"Cruz Roja Asamblea Local Mojácar","m":"Mojácar","pr":"Almería","d":"Paseo del Mediterráneo, 20. 04638, Mojácar, Almería","x":-1.8344,"y":37.1187},{"n":"Cruz Roja Asamblea Comarcal del Almanzora","m":"Macael","pr":"Almería","d":"Avenida Andalucía, 136. 04867, Macael, Almería","x":-2.2969,"y":37.3392},{"n":"Cruz Roja Asamblea Local Vera","m":"Vera","pr":"Almería","d":"Carretera N-340, km 206. 04620, Vera, Almería","x":-1.8702,"y":37.2402},{"n":"Cruz Roja Oficina Provincial Almería","m":"Almería","pr":"Almería","d":"Parque de Nicolás Salmerón, 28. 04002. Almería, Almería","x":-2.47,"y":36.837},{"n":"Cruz Roja Asamblea Local Roquetas de Mar","m":"Roquetas de Mar","pr":"Almería","d":"Avenida Roquetas de Mar, 106. 04740, Roquetas de Mar, Almería","x":-2.6113,"y":36.7621},{"n":"Cruz Roja Asamblea Local de Baza","m":"Guadix","pr":"Granada","d":"C/ Reina Aixa, 4. 18500, Guadix, Granada","x":-3.1377,"y":37.3033},{"n":"Cruz Roja Asamblea Comarcal Motril","m":"Motril","pr":"Granada","d":"C/ Alonso Terrón, 6A. 18600, Motril, Granada","x":-3.5197,"y":36.7422},{"n":"Cruz Roja Asamblea Comarcal Loja","m":"Loja","pr":"Granada","d":"Camino de los Molinillos, s/n. 18300, Loja, Granada","x":-4.1436,"y":37.1657},{"n":"Cruz Roja Asamblea Local Pinos Puente","m":"Pinos Puente","pr":"Granada","d":"Carretera N-432, km 420. 18240, Pinos Puente, Granada","x":-3.754,"y":37.2504},{"n":"Cruz Roja Asamblea Comarcal de Albolote","m":"Albolote","pr":"Granada","d":"C/ San Juan de Dios, 3. 18220, Albolote, Granada","x":-3.6514,"y":37.2303},{"n":"Cruz Roja Oficina Provincial Granada","m":"Granada","pr":"Granada","d":"C/ Cuesta Escoriaza, 8. 18008, Granada, Granada","x":-3.5892,"y":37.169},{"n":"Cruz Roja Asamblea Local de Ogíjares","m":"Ogíjares","pr":"Granada","d":"C/ Padre Vidagort, 4. 18151, Ogíjares, Granada","x":-3.6067,"y":37.1209},{"n":"Cruz Roja Asamblea Comarcal Las Villas Norte","m":"Villanueva del Arzobispo","pr":"Jaén","d":"C/ San Francisco, 11. 23330, Villanueva del Arzobispo, Jaén","x":-3.0086,"y":38.1691},{"n":"Cruz Roja Asamblea Comarcal Las Villas Sur","m":"Villacarrillo","pr":"Jaén","d":"C/ Prior Pellón, 1. 23300, Villacarrillo, Jaén","x":-3.0831,"y":38.116},{"n":"Cruz Roja Asamblea Comarcal La Loma Oriental","m":"Úbeda","pr":"Jaén","d":"C/ Santiago, 4. 23400, Úbeda, Jaén","x":-3.3759,"y":38.0121},{"n":"Cruz Roja Asamblea Comarcal La Loma Occidental","m":"Baeza","pr":"Jaén","d":"C/ Acera de la Trinidad, 1. 23440, Baeza, Jaén","x":-3.4624,"y":37.9963},{"n":"Cruz Roja Asamblea Comarcal Norte","m":"Linares","pr":"Jaén","d":"C/ Prolongación de la calle Guillén, s/n, bloque 2 bajo. 23700, Linares, Jaén","x":-3.6395,"y":38.0965},{"n":"Cruz Roja Asamblea Comarcal Campiña Norte","m":"Andujar","pr":"Jaén","d":"C/ Manuel Andújar, 4. 23740, Andújar, Jaén","x":-4.044,"y":38.0363},{"n":"Cruz Roja Asamblea Comarcal Campiña Sur","m":"Martos","pr":"Jaén","d":"Avenida Europa, 15. 23600, Martos, Jaén","x":-3.9747,"y":37.7292},{"n":"Cruz Roja Asamblea Comarcal Sierra Sur","m":"Alcala la Real","pr":"Jaén","d":"C/ San Juan de Dios. 23680, Alcalá la Real, Jaén","x":-3.9186,"y":37.4575},{"n":"Cruz Roja Asamblea Comarcal de Jaén","m":"Jaén","pr":"Jaén","d":"C/ Ronda del Valle, 7. 23009, Jaén, Jaén","x":-3.7792,"y":37.7827},{"n":"Cruz Roja Asamblea Local Hinojosa del Duque","m":"Hinojosa del Duque","pr":"Córdoba","d":"C/ Marqués de Santillana, 169. Hinojosa del Duque, Córdoba","x":-5.134,"y":38.4931},{"n":"Cruz Roja Asamblea Local Pozoblanco","m":"Pozoblanco","pr":"Córdoba","d":"C/ San Gregorio, 24. 14400, Pozoblanco, Córdoba","x":-4.8522,"y":38.3813},{"n":"Cruz Roja Asamblea Local Villanueva Córdoba","m":"Villanueva de Córdoba","pr":"Córdoba","d":"Carretera Cardeña, s/n. 14440, Villanueva de Córdoba, Córdoba","x":-4.6168,"y":38.3221},{"n":"Cruz Roja Asamblea Comarcal Valle del Guadiato","m":"Peñarroya-Pueblonuevo","pr":"Córdoba","d":"C/ Ronda de la Paz, s/n. 14200, Peñarroya-Pueblonuevo, Córdoba","x":-5.2782,"y":38.3053},{"n":"Cruz Roja Oficina Provincial Córdoba","m":"Córdoba","pr":"Córdoba","d":"C/ Cañada Real de Mestas, 2. 14005, Córdoba, Córdoba","x":-4.8016,"y":37.8851},{"n":"Cruz Roja Asamblea Local Palma del Río","m":"Palma del Rio","pr":"Córdoba","d":"Avenida de Córdoba, 22. 14700,","x":-5.2844,"y":37.7027},{"n":"Cruz Roja Asamblea Local Montilla","m":"Montilla","pr":"Córdoba","d":"Avenida de las Camachas, 5. 14550, Montilla, Córdoba","x":-4.655,"y":37.5803},{"n":"Cruz Roja Asamblea Local Baena","m":"Baena","pr":"Córdoba","d":"C/ Amador de los Ríos, 44. 14850, Baena, Córdoba","x":-4.3267,"y":37.6155},{"n":"Cruz Roja Asamblea Local Priego de Córdoba","m":"Priego de Córdoba","pr":"Córdoba","d":"C/ Carretera de Algarinejo, 10. 14800, Priego de Córdoba, Córdoba","x":-4.1942,"y":37.4324},{"n":"Cruz Roja Asamblea Local Lucena","m":"Lucena","pr":"Córdoba","d":"C/ Pedro Angulo, 12. 14900, Lucena, Córdoba","x":-4.4859,"y":37.4069},{"n":"Cruz Roja Asamblea Local Rute","m":"Rute","pr":"Córdoba","d":"C/ Los Manzanos, s/n. 14960, Rute, Córdoba","x":-4.3781,"y":37.3311},{"n":"Cruz Roja Asamblea Local Puente Genil","m":"Puente Genil","pr":"Córdoba","d":"Avenida Cantaor Jiménez Rejano, s/n. 14500, Puente Genil, Córdoba","x":-4.7648,"y":37.3889},{"n":"Cruz Roja Asamblea Local de Campillos","m":"Campillos","pr":"Málaga","d":"C/ Gregorio Marañón, 4. 29320, Campillos, Málaga","x":-4.8724,"y":37.0506},{"n":"Cruz Roja Asamblea Local Antequera","m":"Antequera","pr":"Málaga","d":"C/ Cuesta de Talavera, s/n. 29200, Antequera, Málaga","x":-4.5724,"y":37.0245},{"n":"Cruz Roja Asamblea Local Ardales","m":"Ardales","pr":"Málaga","d":"Avenida de Málaga, 1. 29550, Ardales, Málaga","x":-4.8456,"y":36.8804},{"n":"Cruz Roja Asamblea Local Pizarra","m":"Pizarra","pr":"Málaga","d":"Avenida de la Fuensanta, 25. 29560, Pizarra, Málaga","x":-4.7088,"y":36.7708},{"n":"Cruz Roja Asamblea Local Cártama","m":"Cártama","pr":"Málaga","d":"C/ San Rafael Alto, bq 2-sotano. 29570, Cártama, Málaga","x":-4.6297,"y":36.7129},{"n":"Cruz Roja Asamblea Comarcal Sierra de las Nieves","m":"Alozaina","pr":"Málaga","d":"Carretera A-366. 29567, Alozaina, Málaga","x":-4.865,"y":36.729},{"n":"Cruz Roja Asamblea Local Coín","m":"Coín","pr":"Málaga","d":"C/ Picaso, 23. 29100. Coín, Málaga","x":-4.7526,"y":36.6604},{"n":"Cruz Roja Asamblea Local Huelva","m":"Huelva","pr":"Huelva","d":"Paseo Buenos Aires, s/n. 21002, Huelva, Huelva","x":-6.9517,"y":37.2619},{"n":"Cruz Roja Asamblea Local Rincón de la Victoria","m":"Rincón de la Victoria","pr":"Málaga","d":"C/ Limoneros, 6. 29730, Rincón de la Victoria, Málaga","x":-4.2932,"y":36.7193},{"n":"Cruz Roja Oficina Provincial Málaga","m":"Málaga","pr":"Málaga","d":"C/ Ollerías, 40. 29012, Málaga, Málaga","x":-4.4228,"y":36.7258},{"n":"Cruz Roja Asamblea Local Torremolinos","m":"Torremolinos","pr":"Málaga","d":"Avenida de Sorolla, 1. 29620, Torremolinos, Málaga","x":-4.5031,"y":36.6244},{"n":"Cruz Roja Asamblea Local Benalmádena","m":"Benalmadena","pr":"Málaga","d":"Avenida Antonio Machado. 29630, Benalmádena, Málaga","x":-4.5252,"y":36.5919},{"n":"Cruz Roja Asamblea Local Fuengirola","m":"Fuengirola","pr":"Málaga","d":"Avenida de Miramar, 7-10 Bajo. 29640, Fuengirola, Málaga","x":-4.6288,"y":36.5312},{"n":"Cruz Roja Asamblea Local Mijas","m":"Mijas","pr":"Málaga","d":"C/ Río Barbate, s/n. 29649, Mijas, Málaga","x":-4.6417,"y":36.54},{"n":"Cruz Roja Asamblea Local Marbella","m":"Marbella","pr":"Málaga","d":"C/ Javier Arraiza, 11. 29603, Marbella, Málaga","x":-4.878,"y":36.5147},{"n":"Cruz Roja Asamblea Local Estepona","m":"Estepona","pr":"Málaga","d":"C/ Dos de Mayo, bajo. 29640, Estepona, Málaga","x":-5.1416,"y":36.4283},{"n":"Cruz Roja Asamblea Local Écija","m":"Écjija","pr":"Sevilla","d":"C/ Camino del Físico, 1. 41400, Écija, Sevilla","x":-5.0889,"y":37.5395},{"n":"Cruz Roja Asamblea Comarcal Osuna","m":"Osuna","pr":"Sevilla","d":"C/ San Agustín, 4. 41640, Osuna, Sevilla","x":-5.1019,"y":37.2356},{"n":"Cruz Roja Asamblea Comarcal Fuentes Andalucía","m":"Fuentes de Andalucía","pr":"Sevilla","d":"C/ Explanada estación, s/n. 41420, Fuentes de Andalucía, Sevilla","x":-5.3438,"y":37.462},{"n":"Cruz Roja Asamblea Local Marchena","m":"Marchena","pr":"Sevilla","d":"Travesía de San Ignacio, s/n. 41620, Marchena, Sevilla","x":-5.4104,"y":37.3266},{"n":"Cruz Roja Asamblea Local Lora del Río","m":"Lora del Río","pr":"Sevilla","d":"C/ Llano de Jesús, 19. 41440, Lora del Río, Sevilla","x":-5.5336,"y":37.6592},{"n":"Cruz Roja Asamblea Local Carmona","m":"Carmona","pr":"Sevilla","d":"C/ Saeta, s/n. 41410, Carmona, Sevilla","x":-5.6569,"y":37.4718},{"n":"Cruz Roja Asamblea Local Utrera","m":"Utrera","pr":"Sevilla","d":"C/ Morales, 52. 41710, Utrera, Sevilla","x":-5.7737,"y":37.1783},{"n":"Cruz Roja Asamblea Local de Guadaíra","m":"Alcalá de Guadaíra","pr":"Sevilla","d":"Plaza del Duque, 4. 41500, Alcalá de Guadaíra, Sevilla","x":-5.85,"y":37.3335},{"n":"Cruz Roja Asamblea Local Dos Hermanas","m":"Dos Hermanas","pr":"Sevilla","d":"Avenida Libertad, s/n. 41700, Dos Hermanas, Sevilla","x":-5.948,"y":37.3007},{"n":"Cruz Roja Oficina Provincial Sevilla","m":"Sevilla","pr":"Sevilla","d":"Avenida de la Cruz Roja, 1. 41009, Sevilla, Sevilla","x":-5.9823,"y":37.401},{"n":"Cruz Roja Asamblea Local Cortegana","m":"Cortegana","pr":"Huelva","d":"C/ Real, 13. 21230, Cortegana, Huelva","x":-6.8211,"y":37.9089},{"n":"Cruz Roja Asamblea Comarcal de Aracena","m":"Aracena","pr":"Huelva","d":"C/ Estudio, 9. 21200, Aracena, Huelva","x":-6.5611,"y":37.8927},{"n":"Cruz Roja Asamblea Local Valverde del Camino","m":"Valverde del Camino","pr":"Huelva","d":"C/ Real de Arriba, 105. 21600, Valverde del Camino, Huelva","x":-6.7524,"y":37.5772},{"n":"Cruz Roja Asamblea Local San Bartolomé de la Torre","m":"San Bartolomé de la Torre","pr":"Huelva","d":"C/ Nueva, 7. 21510, San Bartolomé de la Torre, Huelva","x":-7.1059,"y":37.4461},{"n":"Cruz Roja Asamblea Local Bollullos Par del Condado","m":"Bollullos Par del Condado","pr":"Huelva","d":"Avenida 28 Febrero, s/n. 21710, Bollullos Par del Condado, Huelva","x":-6.5408,"y":37.3546},{"n":"Cruz Roja Oficina Provincial Huelva","m":"Huelva","pr":"Huelva","d":"Paseo Buenos Aires, s/n. 21002, Huelva, Huelva","x":-6.9517,"y":37.262},{"n":"Cruz Roja Asamblea Local Cartaya","m":"Cartaya","pr":"Huelva","d":"C/ Lepe, 60. 21450, Cartaya, Huelva","x":-7.156,"y":37.285},{"n":"Cruz Roja Asamblea Local Lepe","m":"Lepe","pr":"Huelva","d":"C/ Iglesias, 48. 21440, Lepe, Huelva","x":-7.2056,"y":37.2541},{"n":"Cruz Roja Asamblea Local Isla Cristina","m":"Isla Cristina","pr":"Huelva","d":"C/ Poeta Jiménez Vaquero, 4. 21410, Isla Cristina, Huelva","x":-7.326,"y":37.2004},{"n":"Cruz Roja Asamblea Local Ayamonte","m":"Ayamonte","pr":"Huelva","d":"C/ Gibraleón, 38. 21400, Ayamonte, Huelva","x":-7.4059,"y":37.207},{"n":"Cruz Roja Asamblea Local Algeciras","m":"Algeciras","pr":"Cádiz","d":"Carretera Málaga, km 108. 11205, Algeciras, Cádiz","x":-5.4567,"y":36.1568},{"n":"Cruz Roja Asamblea Local Tarifa","m":"Tarifa","pr":"Cádiz","d":"C/ Alcalde Juan Núñez, 5. 11380, Tarifa, Cádiz","x":-5.6056,"y":36.0108},{"n":"Cruz Roja Asamblea Local Conil de la Frontera","m":"Conil de la frontera","pr":"Cádiz","d":"C/ Reyes Católicos, s/n.11140, Conil de la Frontera, Cádiz","x":-6.0853,"y":36.2737},{"n":"Cruz Roja Asamblea Local Medina-Sidonia","m":"Medina Sidonia","pr":"Cádiz","d":"C/ Santo Cristo, s/n. 11170, Medina-Sidonia, Cádiz","x":-5.9268,"y":36.4546},{"n":"Cruz Roja Asamblea Local Arcos de la Frontera","m":"Arcos de la Frontera","pr":"Cádiz","d":"C/ Corregidores, 9. 11630, Arcos de la Frontera, Cádiz","x":-5.8164,"y":36.7496},{"n":"Cruz Roja Asamblea Local Chiclana de la Frontera","m":"Chiclana de la Frontera","pr":"Cádiz","d":"C/ Jesus Nazareno, 11. 11130, Chiclana de la Frontera, Cádiz","x":-6.1506,"y":36.4187},{"n":"Cruz Roja Asamblea Local San Fernando","m":"San Fernando","pr":"Cádiz","d":"C/ Salina La Magdalena, s/n. 11100, San Fernando, Cádiz","x":-6.1927,"y":36.4632},{"n":"Cruz Roja Oficina Provincial Cádiz","m":"Cádiz","pr":"Cádiz","d":"Avenida Fernández Ladreda, 3. 11008, Cádiz, Cádiz","x":-6.2869,"y":36.5219},{"n":"Cruz Roja Asamblea Local Puerto Santa María","m":"El Puerto de Santa María","pr":"Cádiz","d":"C/ Aurora, 3. 11500, El Puerto de Santa María, Cádiz","x":-6.2275,"y":36.5943},{"n":"Cruz Roja Asamblea Local Jerez de la Frontera","m":"Jerez de la Frontera","pr":"Cádiz","d":"C/ Arquitecto Jose de Vargas, s/n. 11408, Jerez de la Frontera, Cádiz","x":-6.1473,"y":36.6753},{"n":"Cruz Roja Asamblea Local Rota","m":"Rota","pr":"Cádiz","d":"C/ Sargento Céspedes, 3. 11520, Rota, Cádiz","x":-6.351,"y":36.6251},{"n":"Cruz Roja Asamblea Local Chipiona","m":"Chipiona","pr":"Cádiz","d":"Avenida Cruz Roja Española, 35. 11550, Chipiona, Cádiz","x":-6.4398,"y":36.7352},{"n":"Cruz Roja Asamblea Local","m":"Sevilla","pr":"Sevilla","d":"Avenida de la Cruz Roja, 1. 41009, Sevilla, Sevilla","x":-5.9822,"y":37.4011},{"n":"Cruz Roja Asamblea Local Adra","m":"Adra","pr":"Almería","d":"C/ Paseo Marítimo, 13. 4470, Adra, Almería","x":-3.0224,"y":36.7476},{"n":"Cruz Roja Asamblea Local El Ejido","m":"El Ejido","pr":"Almería","d":"Carretera Antigua de Málaga. 4700, El Ejido, Almería","x":-2.8326,"y":36.7699},{"n":"Cruz Roja Asamblea Comarcal de Baza","m":"Baza","pr":"Granada","d":"Carretera de Ronda, s/n. 18800, Baza, Granada","x":-2.7779,"y":37.4889},{"n":"Cruz Roja Asamblea Comarcal Sierra de Cazorla","m":"Cazorla","pr":"Jaén","d":"C/ Jaime Cebrián, 4. 23470, Cazorla, Jaén","x":-3.0044,"y":37.918},{"n":"Cruz Roja Oficina Provincial Jaén","m":"Jaén","pr":"Jaén","d":"C/ Ronda del Valle, 7. 23009, Jaén, Jaén","x":-3.7791,"y":37.7827},{"n":"Cruz Roja Asamblea Local Álora","m":"Álora","pr":"Málaga","d":"Avenida de la Constitución, 2. 29500, Álora, Málaga","x":-4.7025,"y":36.8248},{"n":"Cruz Roja Asamblea Local Vélez-Málaga","m":"Vélez-Málaga","pr":"Málaga","d":"C/ Aceituneros, 40, local 2. 29700, Vélez-Málaga, Málaga","x":-4.1113,"y":36.7792},{"n":"Cruz Roja Asamblea Comarcal Estepa","m":"Estepa","pr":"Sevilla","d":"C/ Vinagre, 5. 41560, Estepa, Sevilla","x":-4.8822,"y":37.289},{"n":"Cruz Roja Asamblea Comarcal de Nerva","m":"Nerva","pr":"Huelva","d":"C/ Argentina, s/n. 21670, Nerva, Huelva","x":-6.5498,"y":37.6978},{"n":"Cruz Roja Asamblea Local de Moguer","m":"Moguer","pr":"Huelva","d":"Plaza Nuestra Sra de la Soledad, s/n. 21800, Moguer, Huelva","x":-6.8413,"y":37.2759},{"n":"Cruz Roja Asamblea Local Cádiz","m":"Cádiz","pr":"Cádiz","d":"C/ Teniente Andújar, 12. 11006, Cádiz, Cádiz","x":-6.2912,"y":36.5282},{"n":"Cruz Roja Oficina Territorial Sanlúcar de Barrameda","m":"Sanlúcar de Barrameda","pr":"Cádiz","d":"C/ Pintor Murillo, s/n. 11540, Sanlúcar de Barrameda, Cádiz","x":-6.3523,"y":36.7857},{"n":"Cruz Roja Asamblea Comarcal Valle del Guadalhorce","m":"Pizarra","pr":"Málaga","d":"Avenida de la Fuensanta, 25. 29560, Pizarra, Málaga","x":-4.7088,"y":36.7707},{"n":"Asamblea Local Ronda","m":"Estación de Cártama","pr":"Málaga","d":"C/ Doctor Fleming, 56. 29400, Estación de Cártama, Cártama, Málaga","x":-4.615,"y":36.7337}],"caritas":[{"n":"Cáritas Diocesana de Cádiz","m":"Cádiz","pr":"Cádiz","d":"C/ Hospital de Mujeres, 26. 11001, Cádiz, Cádiz","x":-6.2996,"y":36.5316},{"n":"Cáritas Diocesana de Huelva","m":"Huelva","pr":"Huelva","d":"C/ Doctor Cantero Cuadrado, 1. 21004, Huelva, Huelva","x":-6.9438,"y":37.2586},{"n":"Cáritas Diocesana de Sevilla","m":"Sevilla","pr":"Sevilla","d":"Plaza San Marín de Porres, 7. 41010, Sevilla, Sevilla","x":-6.0097,"y":37.3804},{"n":"Cáritas Diocesana de Córdoba","m":"Córdoba","pr":"Córdoba","d":"C/ Pérez de Castro, 4. 41003, Córdoba, Córdoba","x":-4.7829,"y":37.8834},{"n":"Cáritas Diocesana de Jáen","m":"Jaén","pr":"Jaén","d":"C/ Alonso de Freylas, 6 bajo. 23001, Jaén, Jáen","x":-3.7952,"y":37.7603},{"n":"Cáritas Diocesana de Almería","m":"Almería","pr":"Almería","d":"C/ Alcalde Muñoz, 10. 04004, Almería, Almería","x":-2.4618,"y":36.8421},{"n":"Cáritas Diocesana de Granada","m":"Granada","pr":"Granada","d":"C/ Doctor Azpitarte, 3. 18012, Granada, Granada","x":-3.6079,"y":37.1883},{"n":"Cáritas Diocesana de Guadix- Baza","m":"Guadix","pr":"Granada","d":"C/ Rosa Chacel, 1 Bajo. 18500, Guadix, Granada","x":-3.1419,"y":37.3065},{"n":"Cáritas Diocesana de Málaga","m":"Málaga","pr":"Málaga","d":"C/ Pasillo de Santo Domingo o Rampa de la Aurora, 3. 29009, Málaga, Málaga","x":-4.426,"y":36.7223},{"n":"Cáritas Diocesana de Jerez","m":"Cádiz","pr":"Cádiz","d":"Plaza del Arroyo, 50. 11403, Jerez de la Frontera, Cádiz","x":-6.1406,"y":36.6834}],"medlegal":[{"n":"Instituto de Medicina Legal Cádiz","m":"Cádiz","pr":"Cádiz","d":"Plaza España, 19,  Planta Baja. 11006 Cádiz, Cádiz","x":-6.2924,"y":36.5357},{"n":"Instituto de Medicina Legal Almería","m":"Almería","pr":"Almería","d":"C/ Carretera de Ronda, 120, Planta Jardín (Bl. A). 04005, Almería, Almería","x":-2.454,"y":36.8399},{"n":"Instituto de Medicina Legal Córdoba","m":"Córdoba","pr":"Córdoba","d":"C/ Isla Mallorca, s/n. 14011, Códoba, Córdoba","x":-4.8002,"y":37.8909},{"n":"Instituto de Medicina Legal Huelva","m":"Huelva","pr":"Huelva","d":"Avenida de Alemania, 7.  21002,  Huelva, Huelva","x":-6.956,"y":37.2586},{"n":"Instituto de Medicina Legal Jaén","m":"Jaén","pr":"Jaén","d":"C/ San Antonio, 5, Bajo. 23007, Jaén, Jáen","x":-3.7912,"y":37.7757},{"n":"Instituto de Medicina Legal Granada","m":"Granada","pr":"Granada","d":"Avenida de la Innovación, 1, Parque de las Ciencias de la Salud. 18016, Granada, Granada","x":-3.6067,"y":37.1482},{"n":"Instituto de Medicina Legal Sevilla","m":"Sevilla","pr":"Sevilla","d":"Prado de San Sebastián s/n. Edificio de los Juzgados 1ª Planta. 41004, Sevilla, Sevilla","x":-5.9875,"y":37.3814},{"n":"Instituto de Medicina Legal Málaga","m":"Málaga","pr":"Málaga","d":"C/ Fiscal Luis Portero García, s/n. 29010, Málaga, Málaga","x":-4.4608,"y":36.7159}],"grea":[{"n":"Grupo de Emergencias de Andalucía (GREA) – Base occidental","m":"Los Palacios y Villafranca","pr":"Sevilla","d":"LUGAR EL PALMAR, S/N","t":"Grupo de Emergencias de Andalucía","x":-5.9491,"y":37.1827},{"n":"Grupo de Emergencias de Andalucía (GREA) – Base oriental","m":"Noalejo","pr":"Jaén","d":"LUGAR LOMA PELADA, S/N","t":"Grupo de Emergencias de Andalucía","x":-3.6292,"y":37.5338}],"sava":[{"n":"Servicio de Asistencia a Víctimas en Andalucía - Jaén","m":"Jaén","pr":"Jaén","d":"CALLE LAS MINAS, 1","t":"Servicio de Asistencia a Víctimas en Andalucía (SAVA)","x":-3.7913,"y":37.773},{"n":"Servicio de Asistencia a Víctimas en Andalucía - Almería","m":"Almería","pr":"Almería","d":"CARRETERA DE RONDA, 120","t":"Servicio de Asistencia a Víctimas en Andalucía (SAVA)","x":-2.4542,"y":36.8397},{"n":"Servicio de Asistencia a Víctimas en Andalucía - Cádiz","m":"Cádiz","pr":"Cádiz","d":"CALLE CUESTA DE LAS CALESAS, S/N","t":"Servicio de Asistencia a Víctimas en Andalucía (SAVA)","x":-6.2887,"y":36.5268},{"n":"Servicio de Asistencia a Víctimas en Andalucía - Campo de Gibraltar","m":"Algeciras","pr":"Cádiz","d":"PLAZA DE LA CONSTITUCION, S/N","t":"Servicio de Asistencia a Víctimas en Andalucía (SAVA)","x":-5.4522,"y":36.1375},{"n":"Servicio de Asistencia a Víctimas en Andalucía - Granada","m":"Granada","pr":"Granada","d":"AVENIDA DEL SUR, 1","t":"Servicio de Asistencia a Víctimas en Andalucía (SAVA)","x":-3.6107,"y":37.187},{"n":"Servicio de Asistencia a Víctimas en Andalucía - Huelva","m":"Huelva","pr":"Huelva","d":"ALAMEDA SUNDHEIM, 28","t":"Servicio de Asistencia a Víctimas en Andalucía (SAVA)","x":-6.9428,"y":37.2543},{"n":"Servicio de Asistencia a Víctimas en Andalucía - Málaga","m":"Málaga","pr":"Málaga","d":"CALLE FISCAL LUIS PORTERO GARCIA, S/N","t":"Servicio de Asistencia a Víctimas en Andalucía (SAVA)","x":-4.4614,"y":36.7149},{"n":"Servicio de Asistencia a Víctimas en Andalucía - Sevilla","m":"Sevilla","pr":"Sevilla","d":"AVENIDA DE LA BUHAIRA, 31","t":"Servicio de Asistencia a Víctimas en Andalucía (SAVA)","x":-5.9794,"y":37.3809},{"n":"Servicio de Asistencia a Víctimas en Andalucía - Córdoba","m":"Córdoba","pr":"Córdoba","d":"CALLE ISLA DE MALLORCA, S/N","t":"Servicio de Asistencia a Víctimas en Andalucía (SAVA)","x":-4.8001,"y":37.8908}],"dgepc":[{"n":"Agencia de Seguridad y Gestión Integral de Emergencias de Andalucía","m":"Sevilla","pr":"Sevilla","d":"Calle Inca Garcilaso, 3 Sevilla, 41092 (Edificio Expo). 41092, Sevilla","t":"Centro directivo","x":-6.0104,"y":37.3951},{"n":"Consejería de Sanidad, Presidencia y Emergencias","m":"Sevilla","pr":"Sevilla","d":"Palacio de San Telmo. Avd. De Roma s/n. . 41013, Sevilla","t":"Centro directivo","x":-5.9932,"y":37.3808}]};
+
+/* ——— Definición de categorías (estructura PTEAND) ——— */
+var GRUPOS = [
+ {titulo:"Centros directivos y de coordinación", color:"#6a1b9a", cats:[
+   {k:"dgepc",   nombre:"Agencia de Emergencias (centro directivo)", color:"#4a148c"},
+   {k:"deleg",   nombre:"Delegaciones del Gobierno de la Junta",     color:"#7b1fa2"},
+   {k:"c112",    nombre:"Centros de Coordinación 112",               color:"#9c27b0"},
+   {k:"grea",    nombre:"GREA (Grupo de Emergencias de Andalucía)",  color:"#ce93d8"}
+ ]},
+ {titulo:"Grupo de Intervención", color:"#b71c1c", cats:[
+   {k:"bomberos",nombre:"Parques de bomberos",                       color:"#d32f2f"},
+   {k:"salvamar",nombre:"Salvamento Marítimo",                       color:"#f57c00"},
+   {k:"ume",     nombre:"Unidad Militar de Emergencias (UME)",       color:"#795548"}
+ ]},
+ {titulo:"Grupo Sanitario", color:"#368F3F", cats:[
+   {k:"hosppub", nombre:"Hospitales públicos (SSPA)",                color:"#1976d2"},
+   {k:"hosppriv",nombre:"Centros hospitalarios privados",            color:"#64b5f6"},
+   {k:"psico",   nombre:"Colegios de Psicología",                    color:"#00838f"}
+ ]},
+ {titulo:"Grupo de Apoyo Logístico y Social", color:"#2e7d32", cats:[
+   {k:"adif",    nombre:"Protección y seguridad ADIF (AGE)",         color:"#33691e"},
+   {k:"cruzroja",nombre:"Cruz Roja",                                 color:"#e53935"},
+   {k:"caritas", nombre:"Cáritas",                                   color:"#8bc34a"},
+   {k:"sava",    nombre:"SAVA (Asistencia a Víctimas)",              color:"#009688"}
+ ]},
+ {titulo:"Otros servicios", color:"#455a64", cats:[
+   {k:"medlegal",nombre:"Institutos de Medicina Legal",              color:"#546e7a"}
+ ]}
+];
+var CAT_INFO = {}; GRUPOS.forEach(function(g){ g.cats.forEach(function(c){ CAT_INFO[c.k]={nombre:c.nombre, color:c.color, grupo:g.titulo}; }); });
+
+/* ——— Estado ——— */
+var mapa=null, capas={}, renderer=null, marcadores={}, visibles={}, provinciaFiltro="";
+var fichaSel=[], reto=null, incidenteMarker=null;
+/* ——— Capas WMS en vivo de la REDIAM (dispositivo de extinción) ——— */
+var REDIAM_SERV={
+  agua:"https://www.juntadeandalucia.es/medioambiente/mapwms/REDIAM_puntos_agua?",
+  equip:"https://www.juntadeandalucia.es/medioambiente/mapwms/REDIAM_equipamientos_incendios_2020?"
+};
+var REDIAM_CAPAS=[
+  {id:"agua",     srv:"agua",  layer:"puntos_agua",                 nombre:"Puntos de agua para extinción", icono:"💧", color:"#03a9f4"},
+  {id:"cedefos",  srv:"equip", layer:"Cedefos_Bases_Pistas",        nombre:"CEDEFOs, bases y pistas de aterrizaje", icono:"🛩️", color:"#ff9800"},
+  {id:"torres",   srv:"equip", layer:"Torres_de_Vigilancia",        nombre:"Torres de vigilancia",          icono:"🗼", color:"#8d6e63"},
+  {id:"vehiculos",srv:"equip", layer:"Vehículos_contra_incendios",  nombre:"Vehículos contra incendios",    icono:"🚒", color:"#e53935"}
+];
+var rediamLayers={}; /* id → {normal, dpi, dpi2} */
+/* ——— Límites administrativos DERA (IDEAndalucía) ——— */
+var DERA_LIM_WMS="https://www.ideandalucia.es/services/DERA_g13_limites_administrativos/wms?";
+var DERA_LIM_WFS="https://www.ideandalucia.es/services/DERA_g13_limites_administrativos/wfs";
+var limProv=null, limMun=null;
+var PROV_COD={"04":"Almería","11":"Cádiz","14":"Córdoba","18":"Granada","21":"Huelva","23":"Jaén","29":"Málaga","41":"Sevilla"};
+var LS_KEY="mgrcm_catmedios_v1";
+
+/* ——— Utilidades ——— */
+function $(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];}); }
+function haversineKm(a,b){
+  var R=6371, dLat=(b.y-a.y)*Math.PI/180, dLon=(b.x-a.x)*Math.PI/180;
+  var s=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(a.y*Math.PI/180)*Math.cos(b.y*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return 2*R*Math.asin(Math.sqrt(s));
+}
+function guardarLS(){
+  var res=(reto&&reto.terminado)?reto.resultados:(window.__mgrcmRetoPrevio||null);
+  var base={nombre:$("mgrcm_alumno_nombre").value, notas:$("mgrcm_reto_notas").value, ficha:fichaSel};
+  try{
+    localStorage.setItem(LS_KEY, JSON.stringify(Object.assign({},base,{retoRes:res})));
+  }catch(e){
+    /* cuota superada por las capturas: reintenta guardando los resultados sin imagen */
+    try{
+      var sin=res?res.map(function(r){ var o={}; for(var k in r){ if(k!=="cap") o[k]=r[k]; } return o; }):null;
+      localStorage.setItem(LS_KEY, JSON.stringify(Object.assign({},base,{retoRes:sin})));
+    }catch(e2){}
+  }
+}
+function cargarLS(){
+  try{ var d=JSON.parse(localStorage.getItem(LS_KEY)||"null"); if(!d) return;
+    if(d.nombre) $("mgrcm_alumno_nombre").value=d.nombre;
+    if(d.notas) $("mgrcm_reto_notas").value=d.notas;
+    if(Array.isArray(d.ficha)) fichaSel=d.ficha;
+    if(d.retoRes) window.__mgrcmRetoPrevio=d.retoRes;
+  }catch(e){}
+}
+
+/* ——— Mapa ——— */
+function initMapa(){
+  mapa=L.map("mgrcm_mapa",{zoomSnap:0.5}).setView([37.42,-4.6],7);
+  var osm=L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap",crossOrigin:"anonymous"});
+  var orto=L.tileLayer.wms("https://www.ideandalucia.es/wms/ortofoto2022?",{layers:"ortofotografia_2022_rgb",format:"image/jpeg",attribution:"Ortofoto 2022 © IDEAndalucía"});
+  osm.addTo(mapa);
+  L.control.layers({"Mapa (OSM)":osm,"Ortofoto 2022 (IDEAndalucía)":orto},null,{position:"topright"}).addTo(mapa);
+  L.control.scale({imperial:false}).addTo(mapa);
+  renderer=L.canvas({padding:0.3});
+  /* cada capa REDIAM tiene dos variantes: normal y con símbolos grandes (dpi 180)
+     — al acercar el zoom se conmuta automáticamente para que los símbolos no queden diminutos */
+  REDIAM_CAPAS.forEach(function(c){
+    var base={layers:c.layer,format:"image/png",transparent:true,attribution:"© REDIAM"};
+    rediamLayers[c.id]={
+      normal:L.tileLayer.wms(REDIAM_SERV[c.srv],base),
+      dpi:L.tileLayer.wms(REDIAM_SERV[c.srv],Object.assign({},base,{map_resolution:"180",format_options:"dpi:180"})),
+      dpi2:L.tileLayer.wms(REDIAM_SERV[c.srv],Object.assign({},base,{map_resolution:"288",format_options:"dpi:288"}))
+    };
+  });
+  limProv=L.tileLayer.wms(DERA_LIM_WMS,{layers:"g13_01_Provincia",format:"image/png",transparent:true,attribution:"Límites © DERA/IDEAndalucía"});
+  limMun=L.tileLayer.wms(DERA_LIM_WMS,{layers:"g13_01_TerminoMunicipal",format:"image/png",transparent:true,attribution:"Límites © DERA/IDEAndalucía"});
+  mapa.on("zoomend",function(){ ajustarRadios(); actualizarRediam(); });
+  mapa.on("click",function(ev){
+    if(reto && !reto.terminado) return;
+    var rediamOn=REDIAM_CAPAS.some(function(c){ return $("mgrcm_chk_"+c.id).checked; });
+    var limOn=$("mgrcm_chk_lim_prov").checked || $("mgrcm_chk_lim_mun").checked;
+    if(!rediamOn && !limOn) return;
+    consultarPunto(ev,rediamOn,limOn);
+  });
+  Object.keys(DATOS).forEach(function(k){
+    capas[k]=L.layerGroup(); marcadores[k]=[];
+    DATOS[k].forEach(function(f,idx){
+      var m=L.circleMarker([f.y,f.x],{renderer:renderer,radius:6.5,color:"#ffffff",weight:1.5,fillColor:CAT_INFO[k].color,fillOpacity:0.92});
+      m.__cat=k; m.__idx=idx;
+      m.on("click",function(ev){ onMarkerClick(k,idx,m); L.DomEvent.stopPropagation(ev); });
+      marcadores[k].push(m);
+    });
+    visibles[k]=true;
+    refrescarCapa(k);
+    capas[k].addTo(mapa);
+  });
+  ajustarRadios();
+  actualizarEstado();
+}
+/* radio de los marcadores en función del zoom: al acercarse crecen para poder pulsarlos bien */
+function ajustarRadios(){
+  if(!mapa) return;
+  var z=mapa.getZoom();
+  var r = z<=7 ? 6.5 : Math.min(13, 6.5+(z-7)*1.1);
+  Object.keys(marcadores).forEach(function(k){ marcadores[k].forEach(function(m){ m.setRadius(r); }); });
+}
+/* conmutación de cada capa REDIAM normal / símbolos grandes según zoom + leyendas */
+function actualizarRediam(){
+  if(!mapa) return;
+  var z=mapa.getZoom();
+  REDIAM_CAPAS.forEach(function(c){
+    var on=$("mgrcm_chk_"+c.id).checked;
+    var par=rediamLayers[c.id];
+    /* tres escalones: normal → dpi 180 (z≥10.5) → dpi 288 (z≥12.5, símbolos ~3x) */
+    var quiere = on ? (z>=12.5 ? par.dpi2 : (z>=10.5 ? par.dpi : par.normal)) : null;
+    [par.normal,par.dpi,par.dpi2].forEach(function(l){ if(l!==quiere && mapa.hasLayer(l)) mapa.removeLayer(l); });
+    if(quiere && !mapa.hasLayer(quiere)) quiere.addTo(mapa);
+    var ley=$("mgrcm_ley_"+c.id);
+    ley.style.display = on ? "block" : "none";
+    var img=ley.querySelector("img");
+    if(on && !img.getAttribute("src")){
+      img.src=REDIAM_SERV[c.srv]+"service=WMS&version=1.1.1&request=GetLegendGraphic&layer="+encodeURIComponent(c.layer)+"&format=image/png";
+    }
+  });
+}
+/* capas de límites administrativos on/off */
+function actualizarLimites(){
+  if(!mapa) return;
+  [[limProv,"mgrcm_chk_lim_prov"],[limMun,"mgrcm_chk_lim_mun"]].forEach(function(par){
+    var on=$(par[1]).checked;
+    if(on && !mapa.hasLayer(par[0])) par[0].addTo(mapa);
+    if(!on && mapa.hasLayer(par[0])) mapa.removeLayer(par[0]);
+  });
+}
+/* identifica municipio y provincia en un punto vía WFS DERA (CORS abierto en IDEAndalucía) */
+function identificarMunicipio(latlng,cb){
+  var d=0.0015;
+  var u=DERA_LIM_WFS+"?service=WFS&version=1.1.0&request=GetFeature"+
+    "&typename="+encodeURIComponent("DERA_g13_limites_administrativo:g13_01_TerminoMunicipal")+
+    "&outputFormat=application/json&srsName=EPSG:4326&maxFeatures=1&propertyName=nombre,cod_mun"+
+    "&bbox="+(latlng.lng-d)+","+(latlng.lat-d)+","+(latlng.lng+d)+","+(latlng.lat+d)+",EPSG:4326";
+  fetch(u).then(function(r){ return r.json(); }).then(function(j){
+    var f=j.features&&j.features[0];
+    if(f){ var p=f.properties; cb({municipio:p.nombre, provincia:PROV_COD[String(p.cod_mun||"").slice(0,2)]||""}); }
+    else cb(null);
+  }).catch(function(){ cb(null); });
+}
+/* popup unificado del clic: municipio/provincia + fichas REDIAM */
+function consultarPunto(ev,rediamOn,limOn){
+  var partes='<div style="font-size:12px;max-width:345px">';
+  if(limOn) partes+='<div id="mgrcm_pop_lim" style="background:#eceff1;border-left:4px solid #455a64;border-radius:4px;padding:5px 8px;margin-bottom:4px">📍 Identificando municipio…</div>';
+  if(rediamOn) partes+=bloquesRediam(ev);
+  partes+='</div>';
+  L.popup({maxWidth:360}).setLatLng(ev.latlng).setContent(partes).openOn(mapa);
+  if(limOn){
+    identificarMunicipio(ev.latlng,function(res){
+      var el=document.getElementById("mgrcm_pop_lim");
+      if(!el) return;
+      el.innerHTML = res
+        ? "📍 <strong>"+esc(res.municipio)+"</strong>"+(res.provincia?" · provincia de <strong>"+esc(res.provincia)+"</strong>":"")
+        : "📍 <em>Sin dato facilitado por la fuente en este punto</em> (¿has pulsado fuera de Andalucía?)";
+    });
+  }
+}
+/* consulta GetFeatureInfo unificada de las capas REDIAM activas.
+   La Junta bloquea la incrustación de sus fichas (X-Frame-Options: SAMEORIGIN) y también
+   la lectura de los datos por CORS, así que la ficha oficial se abre en PESTAÑA NUEVA
+   (eso sí está permitido y funciona igualmente dentro de Moodle).
+   La consulta se pide con la imagen reducida a 1/3 para triplicar la tolerancia del clic. */
+function bloquesRediam(ev){
+  var F=3;
+  var size=mapa.getSize(), b=mapa.getBounds();
+  var sw=L.CRS.EPSG3857.project(b.getSouthWest()), ne=L.CRS.EPSG3857.project(b.getNorthEast());
+  var pt=ev.containerPoint;
+  var comun="service=WMS&version=1.1.1&request=GetFeatureInfo&styles="+
+    "&srs=EPSG:3857&bbox="+sw.x+","+sw.y+","+ne.x+","+ne.y+
+    "&width="+Math.max(1,Math.round(size.x/F))+"&height="+Math.max(1,Math.round(size.y/F))+
+    "&x="+Math.max(0,Math.round(pt.x/F))+"&y="+Math.max(0,Math.round(pt.y/F))+
+    "&feature_count=8&info_format=text%2Fhtml";
+  var bloques="";
+  Object.keys(REDIAM_SERV).forEach(function(srv){
+    var activas=REDIAM_CAPAS.filter(function(c){ return c.srv===srv && $("mgrcm_chk_"+c.id).checked; });
+    if(!activas.length) return;
+    var nombres=activas.map(function(c){ return encodeURIComponent(c.layer); }).join(",");
+    var u=REDIAM_SERV[srv]+comun+"&layers="+nombres+"&query_layers="+nombres;
+    bloques+='<div style="margin:6px 0 2px 0;font-weight:700;color:#0277bd">'+activas.map(function(c){ return c.icono; }).join(" ")+' '+esc(activas.map(function(c){ return c.nombre; }).join(" · "))+'</div>'+
+      '<a href="'+u+'" target="_blank" rel="noopener" style="display:inline-block;background:#0277bd;color:#fff;border-radius:5px;padding:5px 10px;text-decoration:none;font-weight:600">📄 Ver ficha oficial REDIAM ↗</a>';
+  });
+  if(!bloques) return "";
+  return '<div style="font-weight:700;margin-bottom:2px">Consulta del dispositivo de extinción en este punto</div>'+bloques+
+    '<div style="color:#555;margin-top:6px;font-size:11px">La ficha se abre en una pestaña nueva porque la Junta no permite incrustarla aquí. '+
+    'Si la tabla aparece vacía: <strong>sin dato facilitado por la fuente en este punto</strong> — acércate con el zoom y pulsa más cerca del símbolo.</div>';
+}
+function pasaFiltro(f){ return !provinciaFiltro || f.pr===provinciaFiltro; }
+function refrescarCapa(k){
+  capas[k].clearLayers();
+  if(!visibles[k]) return;
+  DATOS[k].forEach(function(f,idx){ if(pasaFiltro(f)) capas[k].addLayer(marcadores[k][idx]); });
+}
+function refrescarTodas(){ Object.keys(DATOS).forEach(refrescarCapa); actualizarEstado(); }
+function actualizarEstado(){
+  var tot=0, vis=0;
+  Object.keys(DATOS).forEach(function(k){ tot+=DATOS[k].length; DATOS[k].forEach(function(f){ if(visibles[k]&&pasaFiltro(f)) vis++; }); });
+  var extra = reto&&!reto.terminado ? " · 🎯 RETO EN CURSO (ronda "+(reto.ronda+1)+"/"+reto.total+")" : "";
+  $("mgrcm_status").innerHTML="Mostrando <strong>"+vis+"</strong> de "+tot+" medios del catálogo"+(provinciaFiltro?" · Provincia: <strong>"+esc(provinciaFiltro)+"</strong>":"")+extra;
+}
+
+/* ——— Popup / ficha ——— */
+function onMarkerClick(k,idx,m){
+  if(reto && !reto.terminado){ evaluarClickReto(k,idx,m); return; }
+  var f=DATOS[k][idx], ci=CAT_INFO[k];
+  var html='<div style="font-size:13px;max-width:260px">'+
+    '<div style="font-weight:700;color:'+ci.color+'">'+esc(f.n)+'</div>'+
+    '<div style="color:#555;font-size:11px;margin:2px 0">'+esc(ci.grupo)+' · '+esc(ci.nombre)+'</div>'+
+    (f.t?'<div><strong>Tipo:</strong> '+esc(f.t)+'</div>':'')+
+    (f.d?'<div><strong>Dirección:</strong> '+esc(f.d)+'</div>':'')+
+    '<div><strong>Municipio:</strong> '+esc(f.m||"—")+' ('+esc(f.pr||"—")+')</div>'+
+    '<button class="mgrcm-popup-btn" onclick="mgrcmAddFicha(\''+k+'\','+idx+')">➕ Añadir a mi ficha</button></div>';
+  m.bindPopup(html).openPopup();
+}
+function mgrcmAddFicha(k,idx){
+  if(fichaSel.length>=12){ alert("Máximo 12 medios en la ficha."); return; }
+  if(fichaSel.some(function(s){ return s.k===k&&s.idx===idx; })){ alert("Ese medio ya está en tu ficha."); return; }
+  fichaSel.push({k:k,idx:idx});
+  pintarFicha(); guardarLS();
+}
+function mgrcmQuitarFicha(i){ fichaSel.splice(i,1); pintarFicha(); guardarLS(); }
+function pintarFicha(){
+  var cont=$("mgrcm_ficha_lista");
+  if(!fichaSel.length){ cont.innerHTML='<em style="font-size:.9em;color:#555">Aún no has añadido ningún medio.</em>'; return; }
+  cont.innerHTML=fichaSel.map(function(s,i){
+    var f=DATOS[s.k][s.idx], ci=CAT_INFO[s.k];
+    return '<div class="mgrcm-ficha-item"><span class="mgrcm-dot" style="background:'+ci.color+'"></span>'+
+      '<span><strong>'+esc(f.n)+'</strong> · '+esc(f.m||"")+' ('+esc(f.pr||"")+') <em style="color:#555">— '+esc(ci.nombre)+'</em></span>'+
+      '<button onclick="mgrcmQuitarFicha('+i+')" title="Quitar">✕</button></div>';
+  }).join("");
+}
+
+/* ——— Sidebar / filtros ——— */
+function initSidebar(){
+  var cont=$("mgrcm_grupos"), html="";
+  GRUPOS.forEach(function(g){
+    html+='<div class="mgrcm-grupo"><div class="mgrcm-grupo-titulo" style="background:'+g.color+' !important">'+esc(g.titulo)+'</div>';
+    g.cats.forEach(function(c){
+      html+='<label class="mgrcm-cat"><input type="checkbox" checked data-cat="'+c.k+'">'+
+        '<span class="mgrcm-dot" style="background:'+c.color+'"></span><span>'+esc(c.nombre)+'</span>'+
+        '<span class="mgrcm-cat-n">'+DATOS[c.k].length+'</span></label>';
+    });
+    html+='</div>';
+  });
+  cont.innerHTML=html;
+  cont.querySelectorAll("input[data-cat]").forEach(function(chk){
+    chk.addEventListener("change",function(){ visibles[chk.dataset.cat]=chk.checked; refrescarCapa(chk.dataset.cat); actualizarEstado(); });
+  });
+  var provs={}; Object.keys(DATOS).forEach(function(k){ DATOS[k].forEach(function(f){ if(f.pr) provs[f.pr]=1; }); });
+  Object.keys(provs).sort().forEach(function(p){
+    var o=document.createElement("option"); o.value=p; o.textContent=p; $("mgrcm_provincia").appendChild(o);
+  });
+  $("mgrcm_provincia").addEventListener("change",function(){ provinciaFiltro=this.value; refrescarTodas(); });
+  $("mgrcm_btn_todo").addEventListener("click",function(){
+    provinciaFiltro=""; $("mgrcm_provincia").value="";
+    Object.keys(visibles).forEach(function(k){ visibles[k]=true; });
+    document.querySelectorAll("#mgrcm_grupos input[data-cat]").forEach(function(c){ c.checked=true; });
+    refrescarTodas(); mapa.setView([37.42,-4.6],7);
+  });
+  /* capas REDIAM en el panel lateral */
+  var contR=$("mgrcm_capas_rediam");
+  contR.innerHTML=REDIAM_CAPAS.map(function(c){
+    return '<label class="mgrcm-cat"><input type="checkbox" id="mgrcm_chk_'+c.id+'">'+
+      '<span class="mgrcm-dot" style="background:'+c.color+'"></span>'+
+      '<span>'+c.icono+' '+esc(c.nombre)+' <em>(WMS en vivo)</em></span></label>'+
+      '<div class="mgrcm-leyenda-agua" id="mgrcm_ley_'+c.id+'" style="display:none">'+
+      '<img alt="Leyenda REDIAM: '+esc(c.nombre)+'"></div>';
+  }).join("");
+  REDIAM_CAPAS.forEach(function(c){ $("mgrcm_chk_"+c.id).addEventListener("change",actualizarRediam); });
+  $("mgrcm_chk_lim_prov").addEventListener("change",actualizarLimites);
+  $("mgrcm_chk_lim_mun").addEventListener("change",actualizarLimites);
+  /* activar / desactivar todas las capas de una vez (REDIAM y límites incluidos) */
+  function ponerTodas(v){
+    Object.keys(visibles).forEach(function(k){ visibles[k]=v; });
+    document.querySelectorAll("#mgrcm_grupos input[data-cat]").forEach(function(c){ c.checked=v; });
+    REDIAM_CAPAS.forEach(function(c){ $("mgrcm_chk_"+c.id).checked=v; });
+    $("mgrcm_chk_lim_prov").checked=v; $("mgrcm_chk_lim_mun").checked=v;
+    actualizarRediam();
+    actualizarLimites();
+    refrescarTodas();
+  }
+  $("mgrcm_btn_capas_on").addEventListener("click",function(){ ponerTodas(true); });
+  $("mgrcm_btn_capas_off").addEventListener("click",function(){ ponerTodas(false); });
+}
+
+/* ——— Buscador ——— */
+function initBuscador(){
+  var inp=$("mgrcm_buscador"), res=$("mgrcm_resultados");
+  inp.addEventListener("input",function(){
+    var q=inp.value.trim().toLowerCase();
+    if(q.length<3){ res.style.display="none"; return; }
+    var hits=[];
+    Object.keys(DATOS).forEach(function(k){
+      DATOS[k].forEach(function(f,idx){
+        if(hits.length>=12) return;
+        if((f.n+" "+(f.m||"")).toLowerCase().indexOf(q)>=0) hits.push({k:k,idx:idx,f:f});
+      });
+    });
+    if(!hits.length){ res.innerHTML='<div style="color:#555">Sin resultados…</div>'; res.style.display="block"; return; }
+    res.innerHTML=hits.map(function(h,i){
+      return '<div data-i="'+i+'"><strong>'+esc(h.f.n)+'</strong><br><span style="color:#555">'+esc(h.f.m||"")+' ('+esc(h.f.pr||"")+') · '+esc(CAT_INFO[h.k].nombre)+'</span></div>';
+    }).join("");
+    res.style.display="block";
+    res.querySelectorAll("div[data-i]").forEach(function(el){
+      el.addEventListener("click",function(){
+        var h=hits[parseInt(el.dataset.i,10)];
+        visibles[h.k]=true; var chk=document.querySelector('#mgrcm_grupos input[data-cat="'+h.k+'"]'); if(chk) chk.checked=true;
+        refrescarCapa(h.k);
+        mapa.setView([h.f.y,h.f.x],13);
+        onMarkerClick(h.k,h.idx,marcadores[h.k][h.idx]);
+        res.style.display="none"; inp.value="";
+      });
+    });
+  });
+  document.addEventListener("click",function(e){ if(!res.contains(e.target)&&e.target!==inp) res.style.display="none"; });
+}
+
+/* ——— Reto de localización ——— */
+var RETO_CATS=["bomberos","hosppub","hosppriv","cruzroja","c112","deleg","medlegal","psico","sava","caritas","salvamar","adif"];
+function iniciarReto(){
+  if(reto && !reto.terminado){ if(!confirm("Hay un reto en curso. ¿Reiniciarlo desde el principio?")) return; limpiarIncidente(); reto=null; }
+  reto={ronda:0,total:5,aciertos:0,resultados:[],terminado:false};
+  $("mgrcm_reto_resumen").innerHTML="";
+  var det=$("mgrcm_reto_detalles"); if(det) det.open=false;
+  siguienteRonda();
+  $("mgrcm_reto_panel").scrollIntoView({behavior:"smooth",block:"center"});
+}
+function siguienteRonda(){
+  limpiarIncidente();
+  if(reto.ronda>=reto.total){ terminarReto(); return; }
+  var cat=RETO_CATS[Math.floor(Math.random()*RETO_CATS.length)];
+  var todos=[]; Object.keys(DATOS).forEach(function(k){ DATOS[k].forEach(function(f){ todos.push(f); }); });
+  var base=todos[Math.floor(Math.random()*todos.length)];
+  var inc={x:Math.round((base.x+(Math.random()*0.3-0.15))*1e4)/1e4, y:Math.round((base.y+(Math.random()*0.3-0.15))*1e4)/1e4};
+  var mejor=null, dMin=Infinity;
+  DATOS[cat].forEach(function(f,idx){ var d=haversineKm(inc,f); if(d<dMin){ dMin=d; mejor=idx; } });
+  reto.actual={cat:cat,inc:inc,mejorIdx:mejor,dMin:dMin};
+  incidenteMarker=L.marker([inc.y,inc.x],{interactive:false,icon:L.divIcon({className:"",html:'<div class="mgrcm-incidente" style="font-size:30px;line-height:30px">⚠️</div>',iconSize:[30,30],iconAnchor:[15,15]})}).addTo(mapa);
+  mapa.setView([inc.y,inc.x],9);
+  var avisoCapa = visibles[cat]
+    ? ""
+    : "<br>⚠️ <strong>Esa categoría está ahora desactivada</strong>: actívala tú en el panel lateral, dentro del grupo «"+esc(CAT_INFO[cat].grupo)+"».";
+  var p=$("mgrcm_reto_panel");
+  p.className="mgrcm-reto-panel"; p.style.display="block";
+  p.innerHTML='<span class="mgrcm-badge">Ronda '+(reto.ronda+1)+' de '+reto.total+'</span>'+
+    '<span class="mgrcm-badge" style="background:#007932 !important">Aciertos: '+reto.aciertos+'</span><br>'+
+    '🚨 <strong>Se ha producido una emergencia en el punto ⚠️</strong> (el mapa se ha centrado en él). '+
+    'Tu misión: localiza y <strong>pulsa sobre el punto de color</strong> del medio '+
+    '<strong style="color:'+CAT_INFO[cat].color+'">'+esc(CAT_INFO[cat].nombre)+'</strong> que esté <strong>más cerca</strong> del incidente.'+
+    avisoCapa+
+    '<br><em>💡 Recuerda: las capas las gestionas tú en el panel lateral (puedes activar o desactivar todas). Haz zoom (+/− o rueda del ratón) para comparar distancias: el más cercano no siempre es el que parece a simple vista.</em>';
+  actualizarEstado();
+}
+function evaluarClickReto(k,idx,m){
+  var r=reto.actual;
+  if(k!==r.cat){
+    var pw=$("mgrcm_reto_panel");
+    pw.className="mgrcm-reto-panel mgrcm-ko";
+    pw.innerHTML='<span class="mgrcm-badge">Ronda '+(reto.ronda+1)+' de '+reto.total+'</span>'+
+      '⚠️ Has pulsado un medio de <strong>'+esc(CAT_INFO[k].nombre)+'</strong>, pero esta ronda pide <strong style="color:'+CAT_INFO[r.cat].color+'">'+esc(CAT_INFO[r.cat].nombre)+'</strong>. '+
+      'Activa esa categoría en el panel lateral (grupo «'+esc(CAT_INFO[r.cat].grupo)+'») si no la ves, y vuelve a intentarlo. <em>La ronda sigue en juego.</em>';
+    return;
+  }
+  var f=DATOS[k][idx], fMejor=DATOS[r.cat][r.mejorIdx];
+  var dSel=haversineKm(r.inc,f);
+  var ok=(idx===r.mejorIdx)||(dSel<=r.dMin*1.10+0.3);
+  if(ok) reto.aciertos++;
+  var resultado={cat:CAT_INFO[r.cat].nombre,elegido:f.n,mElegido:f.m||"",dElegido:dSel,correcto:fMejor.n,mCorrecto:fMejor.m||"",dCorrecto:r.dMin,ok:ok};
+  /* captura del mapa de esta ronda (con el incidente y la vista actual) */
+  var capR=capturarMapa(1,0.7);
+  if(capR) resultado.cap=capR;
+  reto.resultados.push(resultado);
+  var esUltima=(reto.ronda+1>=reto.total);
+  var p=$("mgrcm_reto_panel");
+  p.className="mgrcm-reto-panel "+(ok?"mgrcm-ok":"mgrcm-ko");
+  p.innerHTML=(ok?"<strong>✅ ¡Correcto!</strong> ":"<strong>❌ No era el más cercano.</strong> ")+
+    "Elegiste <strong>"+esc(f.n)+"</strong>"+(f.m?" ("+esc(f.m)+")":"")+", a <strong>"+dSel.toFixed(1)+" km</strong> en línea recta del incidente. "+
+    (ok?"":"El más cercano era <strong>"+esc(fMejor.n)+"</strong>"+(fMejor.m?" ("+esc(fMejor.m)+")":"")+", a <strong>"+r.dMin.toFixed(1)+" km</strong>. ")+
+    "📷 <em>Captura de la ronda guardada.</em> <em>Anota en «📝 Mi registro del reto» cómo lo has decidido.</em> "+
+    '<button class="mgrcm-btn" style="margin-left:8px" onclick="mgrcmSiguienteRonda()">'+(esUltima?"Ver mi resultado 🏁":"Siguiente ronda ▶")+'</button>';
+  reto.ronda++;
+}
+function mgrcmSiguienteRonda(){ siguienteRonda(); }
+function terminarReto(){
+  reto.terminado=true;
+  limpiarIncidente();
+  var p=$("mgrcm_reto_panel");
+  p.className="mgrcm-reto-panel "+(reto.aciertos>=3?"mgrcm-ok":"mgrcm-ko");
+  p.innerHTML="<strong>🏁 Reto terminado:</strong> "+reto.aciertos+" aciertos de "+reto.total+". "+
+    (reto.aciertos>=3?"¡Buen dominio del catálogo de medios!":"Repasa la distribución territorial de los medios e inténtalo de nuevo.")+
+    " Los resultados y las capturas de cada ronda se incluirán en tu ficha PDF. No olvides rellenar «📝 Mi registro del reto».";
+  var t='<table class="mgrcm-tabla"><tr><th>Ronda</th><th>Categoría</th><th>Tu elección</th><th>Más cercano</th><th>Resultado</th></tr>';
+  reto.resultados.forEach(function(r,i){
+    t+='<tr class="'+(r.ok?"mgrcm-fila-ok":"mgrcm-fila-ko")+'"><td>'+(i+1)+'</td><td>'+esc(r.cat)+'</td>'+
+       '<td>'+esc(r.elegido)+' ('+r.dElegido.toFixed(1)+' km)</td><td>'+esc(r.correcto)+' ('+r.dCorrecto.toFixed(1)+' km)</td>'+
+       '<td>'+(r.ok?"✅ Acierto":"❌ Fallo")+'</td></tr>';
+  });
+  t+='</table>';
+  $("mgrcm_reto_resumen").innerHTML=t;
+  window.__mgrcmRetoPrevio=reto.resultados;
+  guardarLS();
+  actualizarEstado();
+  mapa.setView([37.42,-4.6],7);
+}
+function limpiarIncidente(){ if(incidenteMarker){ mapa.removeLayer(incidenteMarker); incidenteMarker=null; } }
+
+/* ============ PDF · patrón pdfInit() canónico ============ */
+var PDF_VERDE      = [0x00,0x79,0x32];
+var PDF_VERDE_MED  = [0x36,0x8f,0x3f];
+var PDF_VERDE_OSC  = [0x00,0x4B,0x23];
+var PDF_GRIS       = [0x25,0x25,0x25];
+var PDF_GRIS_CLARO = [0x55,0x55,0x55];
+var PDF_BLANCO     = [0xFF,0xFF,0xFF];
+var PDF_PASTEL     = [232,245,233];
+var PDF_ROSA       = [255,235,238];
+var MARGIN=14, PAGE_W=210, USE_W=PAGE_W-MARGIN*2, LINE_H=6.5;
+
+function pdfInit(){
+  var jsPDF=window.jspdf.jsPDF;
+  var doc=new jsPDF({unit:"mm",format:"a4"});
+  var y=34, tituloDoc="", subtituloDoc="";
+  function checkPage(need){ need=need||LINE_H; if(y+need>278){ doc.addPage(); y=40; } }
+  function header(titulo,subtitulo){
+    tituloDoc=titulo; subtituloDoc=subtitulo;
+    doc.setFillColor(PDF_VERDE[0],PDF_VERDE[1],PDF_VERDE[2]);
+    doc.setFillColor(0,121,50);doc.rect(0,0,PAGE_W,26,"F");try{doc.addImage(LOGO_JUNTA,"PNG",PAGE_W-38,3,24,13.6);}catch(e){}
+    doc.setTextColor(PDF_BLANCO[0],PDF_BLANCO[1],PDF_BLANCO[2]);
+    doc.setFont("helvetica","bold"); doc.setFontSize(15);
+    doc.text(doc.splitTextToSize(titulo,USE_W),MARGIN,11);
+    doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
+    doc.text(doc.splitTextToSize(subtitulo,USE_W),MARGIN,19);
+    y=34;
+  }
+  function sectionTitle(num,txt){
+    checkPage(14);
+    doc.setFillColor(PDF_VERDE_MED[0],PDF_VERDE_MED[1],PDF_VERDE_MED[2]);
+    doc.rect(MARGIN,y-5,USE_W,8,"F");
+    doc.setTextColor(PDF_BLANCO[0],PDF_BLANCO[1],PDF_BLANCO[2]);
+    doc.setFont("helvetica","bold"); doc.setFontSize(10.5);
+    doc.text(num+". "+txt,MARGIN+2,y+0.5);
+    y+=10;
+  }
+  function field(label,valor){
+    checkPage();
+    doc.setTextColor(PDF_GRIS[0],PDF_GRIS[1],PDF_GRIS[2]);
+    doc.setFont("helvetica","bold"); doc.setFontSize(9.5);
+    doc.text(label+":",MARGIN,y);
+    doc.setFont("helvetica","normal");
+    var lines=doc.splitTextToSize(String(valor||"—"),USE_W-45);
+    lines.forEach(function(l,i){ checkPage(); doc.text(l,MARGIN+42,y); if(i<lines.length-1) y+=LINE_H; });
+    y+=LINE_H;
+  }
+  function itemText(item,desc){
+    checkPage();
+    doc.setTextColor(PDF_GRIS[0],PDF_GRIS[1],PDF_GRIS[2]);
+    doc.setFont("helvetica","bold"); doc.setFontSize(9);
+    var l1=doc.splitTextToSize("- "+item,USE_W-6);
+    l1.forEach(function(l){ checkPage(); doc.text(l,MARGIN+2,y); y+=LINE_H-1.5; });
+    if(desc){
+      doc.setFont("helvetica","normal"); doc.setFontSize(8.5);
+      doc.setTextColor(PDF_GRIS_CLARO[0],PDF_GRIS_CLARO[1],PDF_GRIS_CLARO[2]);
+      var l2=doc.splitTextToSize(String(desc),USE_W-12);
+      l2.forEach(function(l){ checkPage(); doc.text(l,MARGIN+7,y); y+=LINE_H-1.8; });
+    }
+    y+=1.8;
+  }
+  function blockBar(titulo,estilo){
+    checkPage(12);
+    var col = estilo==="ko" ? PDF_ROSA : PDF_PASTEL;
+    doc.setFillColor(col[0],col[1],col[2]);
+    doc.rect(MARGIN,y-4.5,USE_W,7,"F");
+    doc.setTextColor(PDF_VERDE_OSC[0],PDF_VERDE_OSC[1],PDF_VERDE_OSC[2]);
+    doc.setFont("helvetica","bold"); doc.setFontSize(9.5);
+    doc.text(titulo,MARGIN+2,y);
+    y+=8;
+  }
+  function tableHeader(cols,widths){
+    checkPage(10);
+    var x=MARGIN;
+    doc.setFillColor(PDF_VERDE[0],PDF_VERDE[1],PDF_VERDE[2]);
+    doc.rect(MARGIN,y-4.5,USE_W,7,"F");
+    doc.setTextColor(PDF_BLANCO[0],PDF_BLANCO[1],PDF_BLANCO[2]);
+    doc.setFont("helvetica","bold"); doc.setFontSize(8);
+    cols.forEach(function(c,i){ doc.text(doc.splitTextToSize(c,widths[i]-2),x+1,y); x+=widths[i]; });
+    y+=7;
+  }
+  function tableRow(cols,widths,estilo){
+    var maxLines=1, cells=cols.map(function(c,i){ var ls=doc.splitTextToSize(String(c),widths[i]-2); maxLines=Math.max(maxLines,ls.length); return ls; });
+    var rowH=maxLines*3.6+3;
+    checkPage(rowH+2);
+    if(estilo){ var col=estilo==="ko"?PDF_ROSA:PDF_PASTEL; doc.setFillColor(col[0],col[1],col[2]); doc.rect(MARGIN,y-4,USE_W,rowH,"F"); }
+    doc.setTextColor(PDF_GRIS[0],PDF_GRIS[1],PDF_GRIS[2]);
+    doc.setFont("helvetica","normal"); doc.setFontSize(7.8);
+    var x=MARGIN;
+    cells.forEach(function(ls,i){ ls.forEach(function(l,j){ doc.text(l,x+1,y+j*3.6); }); x+=widths[i]; });
+    y+=rowH;
+  }
+  function separator(){ checkPage(6); doc.setDrawColor(PDF_VERDE_MED[0],PDF_VERDE_MED[1],PDF_VERDE_MED[2]); doc.line(MARGIN,y-2,PAGE_W-MARGIN,y-2); y+=3; }
+  function footer(nombre){
+    var pages=doc.getNumberOfPages();
+    var fecha=new Date(), f=("0"+fecha.getDate()).slice(-2)+"/"+("0"+(fecha.getMonth()+1)).slice(-2)+"/"+fecha.getFullYear()+", "+("0"+fecha.getHours()).slice(-2)+":"+("0"+fecha.getMinutes()).slice(-2)+":"+("0"+fecha.getSeconds()).slice(-2);
+    for(var i=1;i<=pages;i++){
+      doc.setPage(i);
+      if(i>1){
+        doc.setFillColor(PDF_VERDE[0],PDF_VERDE[1],PDF_VERDE[2]);
+        doc.rect(0,0,PAGE_W,10,"F");
+        doc.setTextColor(PDF_BLANCO[0],PDF_BLANCO[1],PDF_BLANCO[2]);
+        doc.setFont("helvetica","bold"); doc.setFontSize(8);
+        doc.text(doc.splitTextToSize(tituloDoc,USE_W)[0],MARGIN,6.5);
+      }
+      doc.setDrawColor(PDF_VERDE[0],PDF_VERDE[1],PDF_VERDE[2]);
+      doc.line(MARGIN,285,PAGE_W-MARGIN,285);
+      doc.setTextColor(PDF_GRIS_CLARO[0],PDF_GRIS_CLARO[1],PDF_GRIS_CLARO[2]);
+      doc.setFont("helvetica","normal"); doc.setFontSize(7.5);
+      doc.text("Generado el "+f+" · Nombre: "+(nombre||"—"),MARGIN,289);
+      doc.text("Módulo 1510 · Gestión de recursos de emergencias y protección civil · UT1. Determinación de medios de vigilancia e intervención",MARGIN,293);
+      doc.text("Pág. "+i+"/"+pages,PAGE_W-MARGIN,289,{align:"right"});
+    }
+  }
+  return { doc:doc, header:header, sectionTitle:sectionTitle, field:field, itemText:itemText,
+    blockBar:blockBar, tableHeader:tableHeader, tableRow:tableRow, separator:separator, footer:footer,
+    get y(){ return y; }, set y(v){ y=v; }, checkPage:checkPage };
+}
+
+/* Captura del mapa a imagen (teselas OSM con CORS + canvas de marcadores + incidente).
+   escP: factor de escala (1.5 por defecto); calidad: JPEG 0-1 (0.82 por defecto).
+   Si el fondo activo es la ortofoto u otra capa sin CORS, esas teselas se omiten
+   para no contaminar el canvas; si no hay ninguna tesela OSM visible devuelve null. */
+function capturarMapa(escP,calidad){
+  try{
+    var cont=$("mgrcm_mapa"), rect=cont.getBoundingClientRect();
+    var ESC=escP||1.5, CAL=calidad||0.82;
+    var cv=document.createElement("canvas");
+    cv.width=Math.round(rect.width*ESC); cv.height=Math.round(rect.height*ESC);
+    var ctx=cv.getContext("2d"); ctx.scale(ESC,ESC);
+    ctx.fillStyle="#e8e8e8"; ctx.fillRect(0,0,rect.width,rect.height);
+    var drew=0;
+    cont.querySelectorAll("img.leaflet-tile").forEach(function(im){
+      if(!im.complete||!im.naturalWidth) return;
+      if(im.src.indexOf("tile.openstreetmap.org")<0) return; /* solo teselas con CORS */
+      var r=im.getBoundingClientRect();
+      try{ ctx.drawImage(im, r.left-rect.left, r.top-rect.top, r.width, r.height); drew++; }catch(e){}
+    });
+    if(!drew) return null;
+    cont.querySelectorAll("canvas").forEach(function(c){
+      var r=c.getBoundingClientRect();
+      try{ ctx.drawImage(c, r.left-rect.left, r.top-rect.top, r.width, r.height); }catch(e){}
+    });
+    if(incidenteMarker && incidenteMarker._icon){
+      var ri=incidenteMarker._icon.getBoundingClientRect();
+      ctx.font="26px sans-serif"; ctx.textBaseline="top";
+      ctx.fillText("⚠️", ri.left-rect.left, ri.top-rect.top);
+    }
+    ctx.strokeStyle="#007932"; ctx.lineWidth=2;
+    ctx.strokeRect(1,1,rect.width-2,rect.height-2);
+    return {url:cv.toDataURL("image/jpeg",CAL), w:cv.width, h:cv.height};
+  }catch(e){ return null; }
+}
+
+function generarPDF_CatalogoMedios(){
+  var nomRaw=$("mgrcm_alumno_nombre").value.trim();
+  if(!nomRaw){ alert("Escribe tu nombre y apellidos antes de generar el PDF."); $("mgrcm_alumno_nombre").focus(); return; }
+  guardarLS();
+  var nom=nomRaw.normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^A-Za-z0-9 ]/g,"").trim()||"NOMBRE_NO_INDICADO";
+  var p=pdfInit();
+  p.header("Catalogo de Medios y Recursos - PTEAND",
+    MGRCM_MODULO+" - UD"+MGRCM_UD+" - Apt "+MGRCM_APT+" - Ficha de trabajo del alumnado");
+  p.sectionTitle("1","Datos del alumno o alumna");
+  p.field("Nombre y apellidos",nomRaw);
+  var hoy=new Date();
+  p.sectionTitle("2","Resumen del catalogo consultado");
+  p.itemText("Fuente","Visor PTEAND (IECA - Junta de Andalucia): servicios WFS PTEAND, DERA G12 e ISE de IDEAndalucia; capas REDIAM en vivo (WMS): puntos de agua y equipamientos contra incendios 2020 (CEDEFOs/bases/pistas, torres de vigilancia, vehiculos).");
+  var tot=0; Object.keys(DATOS).forEach(function(k){ tot+=DATOS[k].length; });
+  p.itemText("Medios catalogados en el visor didactico",String(tot)+" elementos en "+Object.keys(DATOS).length+" categorias, organizados segun la estructura operativa del PTEAND.");
+  GRUPOS.forEach(function(g){
+    p.itemText(g.titulo,g.cats.map(function(c){ return CAT_INFO[c.k].nombre+" ("+DATOS[c.k].length+")"; }).join("; ")+".");
+  });
+  var resultados=(reto&&reto.terminado)?reto.resultados:(window.__mgrcmRetoPrevio||null);
+  p.sectionTitle("3","Reto de localizacion de medios");
+  if(resultados&&resultados.length){
+    var aciertos=resultados.filter(function(r){ return r.ok; }).length;
+    p.blockBar("RESULTADO: "+aciertos+" aciertos de "+resultados.length,aciertos>=3?"ok":"ko");
+    p.tableHeader(["Ronda","Categoria","Tu eleccion","Mas cercano","Resultado"],[14,42,52,52,22]);
+    resultados.forEach(function(r,i){
+      p.tableRow([String(i+1),r.cat,r.elegido+" ("+r.dElegido.toFixed(1)+" km)",r.correcto+" ("+r.dCorrecto.toFixed(1)+" km)",r.ok?"Acierto":"Fallo"],[14,42,52,52,22],r.ok?"ok":"ko");
+    });
+    var hayCaps=resultados.some(function(r){ return r.cap && r.cap.url; });
+    if(hayCaps){
+      p.blockBar("CAPTURAS DEL MAPA EN CADA RONDA");
+      resultados.forEach(function(r,i){
+        if(!(r.cap&&r.cap.url)) return;
+        var wI=110, hI=wI*r.cap.h/r.cap.w;
+        if(hI>75){ hI=75; wI=hI*r.cap.w/r.cap.h; }
+        p.checkPage(hI+16);
+        p.itemText("Ronda "+(i+1)+" - "+r.cat,(r.ok?"Acierto":"Fallo")+": "+r.elegido+" ("+r.dElegido.toFixed(1)+" km)");
+        try{ p.doc.addImage(r.cap.url,"JPEG",MARGIN+2,p.y-2,wI,hI); p.y=p.y+hI+5; }catch(e){}
+      });
+    }
+  } else {
+    p.itemText("Sin realizar","No se ha completado el reto de localizacion. Puedes realizarlo desde el boton del interactivo antes de generar el PDF.");
+  }
+  p.blockBar("MISION DE RECONOCIMIENTO (capas REDIAM del dispositivo de extincion)");
+  p.itemText("Consigna 1","Torre de vigilancia mas proxima al municipio del alumno o alumna (nombre o codigo y comarca).");
+  p.itemText("Consigna 2","Instalacion del dispositivo aereo mas cercana (CEDEFO, base o pista) y su tipo.");
+  p.itemText("Consigna 3","Balsa o pantaneta a menos de ~10 km de un parque de bomberos del catalogo (codigo del punto de agua y nombre del parque).");
+  var notas=$("mgrcm_reto_notas").value.trim();
+  p.blockBar("REGISTRO DEL ALUMNADO: reto y mision de reconocimiento");
+  if(notas){
+    p.doc.setFont("helvetica","normal"); p.doc.setFontSize(9);
+    p.doc.setTextColor(PDF_GRIS[0],PDF_GRIS[1],PDF_GRIS[2]);
+    notas.split(/\n/).forEach(function(par){
+      var lines=p.doc.splitTextToSize(par||" ",USE_W-6);
+      lines.forEach(function(l){ p.checkPage(); p.doc.text(l,MARGIN+2,p.y); p.y=p.y+LINE_H-1.5; });
+      p.y=p.y+1.5;
+    });
+  } else {
+    p.itemText("Sin registro","El alumno o alumna no ha descrito su estrategia. Escribela en el cuadro <Mi registro del reto> del interactivo y vuelve a generar el PDF.");
+  }
+  p.sectionTitle("4","Medios seleccionados en mi ficha");
+  if(fichaSel.length){
+    fichaSel.forEach(function(s){
+      var f=DATOS[s.k][s.idx], ci=CAT_INFO[s.k];
+      p.itemText(f.n,ci.grupo+" - "+ci.nombre+(f.t?" - Tipo: "+f.t:"")+(f.d?" - Direccion: "+f.d:"")+" - "+(f.m||"")+" ("+(f.pr||"")+"). Coordenadas: "+f.y.toFixed(4)+", "+f.x.toFixed(4)+".");
+    });
+  } else {
+    p.itemText("Sin seleccion","No se han anadido medios a la ficha. Usa el boton del popup de cada medio en el mapa.");
+  }
+  p.sectionTitle("5","Vista del mapa en el momento de la entrega");
+  var cap=capturarMapa();
+  if(cap){
+    var wImg=USE_W, hImg=wImg*cap.h/cap.w;
+    if(hImg>140){ hImg=140; wImg=hImg*cap.w/cap.h; }
+    p.checkPage(hImg+10);
+    p.doc.addImage(cap.url,"JPEG",MARGIN+(USE_W-wImg)/2,p.y-2,wImg,hImg);
+    p.y=p.y+hImg+4;
+    p.itemText("Nota","Captura de la vista del mapa (fondo OpenStreetMap) con las categorias visibles al generar la ficha. Las capas WMS en vivo, como los puntos de agua, pueden no aparecer en la captura.");
+  } else {
+    p.itemText("Captura no disponible","Para incluir la vista del mapa en el PDF selecciona el fondo <Mapa (OSM)> en el control de capas (esquina superior derecha del mapa), espera a que carguen las teselas y vuelve a generar la ficha.");
+  }
+  p.separator();
+  p.itemText("Recuerda","Los datos son una instantanea con fines didacticos. Para uso operativo consulta el visor oficial del PTEAND actualizado.");
+  p.footer(nomRaw);
+  var f2=new Date();
+  var aammdd=String(f2.getFullYear()).slice(2)+("0"+(f2.getMonth()+1)).slice(-2)+("0"+f2.getDate()).slice(-2);
+  p.doc.save("UD"+MGRCM_UD+"_Apt"+MGRCM_APT+"_CatalogoMedios_"+aammdd+"_"+nom+".pdf");
+}
+
+/* ——— Arranque ——— */
+function init(){
+  cargarLS();
+  initMapa();
+  initSidebar();
+  initBuscador();
+  pintarFicha();
+  $("mgrcm_btn_reto").addEventListener("click",iniciarReto);
+  $("mgrcm_btn_pdf").addEventListener("click",generarPDF_CatalogoMedios);
+  $("mgrcm_alumno_nombre").addEventListener("change",guardarLS);
+  $("mgrcm_reto_notas").addEventListener("change",guardarLS);
+}
+if(document.readyState==="loading"){ document.addEventListener("DOMContentLoaded",init); } else { init(); }
+
+/* ============ G4: exposición de funciones usadas en onclick inline ============ */
+window.mgrcmAddFicha=mgrcmAddFicha;
+window.mgrcmQuitarFicha=mgrcmQuitarFicha;
+window.mgrcmSiguienteRonda=mgrcmSiguienteRonda;
+/* ============ G5: getters de variables IIFE consultables desde fuera ============ */
+Object.defineProperty(window,"mgrcmFichaSel",{get:function(){ return fichaSel; }});
+Object.defineProperty(window,"mgrcmReto",{get:function(){ return reto; }});
+Object.defineProperty(window,"mgrcmMapa",{get:function(){ return mapa; }});
+Object.defineProperty(window,"mgrcmDatos",{get:function(){ return DATOS; }});
+})();
+</script><script>(function(){function fit(){try{var h=document.body.scrollHeight;if(window.frameElement){window.frameElement.style.height=(h+4)+"px";}}catch(e){}}window.addEventListener("load",fit);window.addEventListener("resize",fit);if(window.ResizeObserver){try{new ResizeObserver(fit).observe(document.body);}catch(e){}}document.addEventListener("click",function(){setTimeout(fit,60);});document.addEventListener("input",function(){setTimeout(fit,60);});document.addEventListener("change",function(){setTimeout(fit,60);});setTimeout(fit,300);setTimeout(fit,1200);})();</script>
+</body></html>
